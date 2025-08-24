@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Animaciones personalizadas */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.5s ease-out;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out;
+}
+
+/* Estilos globales */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #F4F6F9;
+  color: #111827;
+}
+
+input:focus,
+select:focus,
+button:focus {
+  outline: none;
+}
+
+/* Personalización de Bootstrap */
+.btn-primary {
+  --bs-btn-bg: #2563EB;
+  --bs-btn-hover-bg: #1D4ED8;
+  --bs-btn-border-color: #2563EB;
+  --bs-btn-hover-border-color: #1D4ED8;
+  --bs-btn-color: #fff;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #2563EB;
+  --bs-btn-border-color: #2563EB;
+  --bs-btn-hover-bg: #2563EB;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-border-color: #2563EB;
+}
+
+.alert-danger {
+  background-color: #FEE2E2;
+  border-color: #FECACA;
+  color: #991B1B;
+}
+
+.badge.bg-success {
+  background-color: #10B981 !important;
+}
+
+.card {
+  background-color: #F9FAFB;
+  border-radius: 1rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.1);
+}
+
+.input-group-text {
+  background-color: #EFF6FF;
+  border: none;
+}
+
+.form-control {
+  background-color: #FFFFFF;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
+}

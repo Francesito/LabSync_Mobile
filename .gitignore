@@ -1,0 +1,18 @@
+# entornos
+.env
+.env.local
+
+# módulos de Node
+frontend/node_modules/
+backend/node_modules/
+
+node_modules
+
+# builds
+frontend/.next/
+frontend/out/
+backend/dist/
+
+# IDEs, SO
+.vscode/
+.DS_Store
