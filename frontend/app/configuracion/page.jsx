@@ -30,6 +30,8 @@ export default function Configuracion() {
     { id: 4, nombre: 'administrador' }
   ];
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   // Verificar que el usuario es administrador
   if (!usuario || usuario.rol_id !== 4) {
     return (
@@ -66,7 +68,7 @@ export default function Configuracion() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/usuarios-almacen`, {
+     const response = await fetch(`${API_URL}/api/admin/usuarios-almacen`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -92,7 +94,7 @@ export default function Configuracion() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/usuarios`, {
+      const response = await fetch(`${API_URL}/api/admin/usuarios`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -111,7 +113,7 @@ export default function Configuracion() {
    // Cargar grupos
   const cargarGrupos = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/grupos`);
+     const response = await fetch(`${API_URL}/api/grupos`);
       if (response.ok) {
         const data = await response.json();
         setGrupos(data);
@@ -127,7 +129,7 @@ export default function Configuracion() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/estadisticas`, {
+       const response = await fetch(`${API_URL}/api/admin/estadisticas`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -168,7 +170,7 @@ export default function Configuracion() {
         return;
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/crear-usuario`, {
+       const response = await fetch(`${API_URL}/api/admin/crear-usuario`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +211,7 @@ export default function Configuracion() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/actualizar-permisos`, {
+      const response = await fetch(`${API_URL}/api/admin/actualizar-permisos`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -257,7 +259,7 @@ export default function Configuracion() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/bloquear-usuario`, {
+       const response = await fetch(`${API_URL}/api/admin/bloquear-usuario`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -303,7 +305,7 @@ export default function Configuracion() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/desbloquear-usuario`, {
+      const response = await fetch(`${API_URL}/api/admin/desbloquear-usuario`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -353,7 +355,7 @@ export default function Configuracion() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/eliminar-usuario`, {
+       const response = await fetch(`${API_URL}/api/admin/eliminar-usuario`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -416,7 +418,7 @@ export default function Configuracion() {
         setLoading(false);
         return;
       }
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/eliminar-usuarios`, {
+    const response = await fetch(`${API_URL}/api/admin/eliminar-usuarios`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

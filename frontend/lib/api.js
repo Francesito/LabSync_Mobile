@@ -5,9 +5,19 @@ const baseURL = process.env.NEXT_PUBLIC_API_URL
   ? `${process.env.NEXT_PUBLIC_API_URL}/api`
   : 'https://labsync-1090.onrender.com/api';
 
+// Lee el API Key desde las variables de entorno y lo agrega como cabecera
+// por defecto para todas las peticiones. Esto permite configurar el valor
+// sin exponerlo directamente en el código fuente.
+const defaultHeaders = {};
+const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+if (apiKey) {
+  defaultHeaders['x-api-key'] = apiKey;
+}
+
 const API = axios.create({
   baseURL,
     timeout: 10000, // 10s de tiempo máximo por petición
+  headers: defaultHeaders,
 });
 
 // --- Solicitudes (alumno/docente) ---
