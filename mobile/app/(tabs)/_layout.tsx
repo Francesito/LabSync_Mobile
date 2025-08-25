@@ -56,55 +56,48 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Ionicons name="book" size={28} color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="prestamo"
-        options={{
-          title: 'Préstamo',
-          tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal" size={28} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="residuo"
-        options={{
-          title: 'Residuo',
-          tabBarIcon: ({ color }) => <Ionicons name="trash" size={28} color={color} />,
-        }}
-      />
-      <Tabs.Screen
+    {[1, 2, 3].includes(roleId) && (
+        <Tabs.Screen
         name="solicitudes"
-        options={{
-          title: 'Solicitudes',
-          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={28} color={color} />,
-        }}
-      />
-        <Tabs.Screen
-        name="adeudos"
-        options={{
-          title: 'Adeudos',
-          tabBarIcon: ({ color }) => <Ionicons name="alert-circle" size={28} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: 'Chat',
-          tabBarIcon: ({ color }) => <Ionicons name="chatbubble-ellipses" size={28} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="notificaciones"
-        options={{
-          title: 'Notificaciones',
-          tabBarIcon: ({ color }) => <Ionicons name="notifications" size={28} color={color} />,
-        }}
-      />
-      {[3, 4].includes(roleId) && (
-        <Tabs.Screen
-          key="historial"
-          name="historial"
           options={{
-            title: 'Historial',
-            tabBarIcon: ({ color }) => <Ionicons name="time" size={28} color={color} />,
+            title: 'Solicitudes',
+            tabBarIcon: ({ color }) => <Ionicons name="document-text" size={28} color={color} />,
+          }}
+        />
+      )}
+      {[1, 2].includes(roleId) && (
+        <Tabs.Screen
+          name="adeudos"
+          options={{
+           title: 'Adeudos',
+            tabBarIcon: ({ color }) => <Ionicons name="alert-circle" size={28} color={color} />,
+          }}
+        />
+      )}
+      {roleId === 1 && (
+        <Tabs.Screen
+          name="residuo"
+          options={{
+            title: 'Residuos',
+            tabBarIcon: ({ color }) => <Ionicons name="trash" size={28} color={color} />,
+          }}
+        />
+      )}
+      {roleId === 3 && (
+        <Tabs.Screen
+          name="prestamo"
+          options={{
+            title: 'Préstamos',
+            tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal" size={28} color={color} />,
+          }}
+        />
+      )}
+      {[1, 3].includes(roleId) && (
+        <Tabs.Screen
+          name="chat"
+          options={{
+            title: 'Chat',
+            tabBarIcon: ({ color }) => <Ionicons name="chatbubble-ellipses" size={28} color={color} />,
           }}
         />
       )}
@@ -125,6 +118,25 @@ export default function TabLayout() {
           options={{
             title: 'Configuración',
             tabBarIcon: ({ color }) => <Ionicons name="settings" size={28} color={color} />,
+          }}
+        />
+      )}
+      {[3, 4].includes(roleId) && (
+        <Tabs.Screen
+          key="historial"
+          name="historial"
+          options={{
+            title: 'Historial',
+            tabBarIcon: ({ color }) => <Ionicons name="time" size={28} color={color} />,
+          }}
+        />
+      )}
+      {[1, 2, 3].includes(roleId) && (
+        <Tabs.Screen
+          name="notificaciones"
+          options={{
+            title: 'Notificaciones',
+            tabBarIcon: ({ color }) => <Ionicons name="notifications" size={28} color={color} />,
           }}
         />
       )}
