@@ -17,6 +17,7 @@
     Keyboard,
 } from 'react-native';
 import axios from 'axios';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 // eslint-disable-next-line import/no-unresolved
@@ -1141,16 +1142,17 @@ import * as ImagePicker from 'expo-image-picker';
                     </ScrollView>
                     {selectedCart.length > 0 && (
                     <View style={styles.cartFooter}>
-                        <TouchableOpacity
-                        style={styles.btnCreateVale}
-                        onPress={() => {
-                        closeCartModal();
-                            setShowRequestModal(true);
-                        }}
-                        disabled={selectedCart.length === 0 || totalItems === 0 || !canMakeRequests()}
-                        >
-                        <Text style={styles.btnText}>Crear Vale</Text>
-                        </TouchableOpacity>
+                                                <TouchableOpacity
+                            style={styles.btnCreateVale}
+                            onPress={async () => {
+                                closeCartModal();
+                                try { await loadDocentes(); } catch {}
+                                setShowRequestModal(true);
+                            }}
+                            disabled={selectedCart.length === 0 || totalItems === 0 || !canMakeRequests()}
+                            >
+                            <Text style={styles.btnText}>Crear Vale</Text>
+                            </TouchableOpacity>
                         <TouchableOpacity
                         style={styles.btnClear}
                         onPress={vaciarSeleccion}
@@ -1279,7 +1281,12 @@ import * as ImagePicker from 'expo-image-picker';
                 </View>
             </Modal>
 
-            <Modal visible={showRequestModal} animationType="fade" transparent={true} onRequestClose={() => setShowRequestModal(false)}>
+            <Modal
+  visible={showRequestModal}
+  animationType="fade"
+  transparent={false}  // ← antes estaba en true
+  onRequestClose={() => setShowRequestModal(false)}
+>
                 <View style={styles.modalOverlay}>
                 <View style={styles.modalContentCustom}>
                     <View style={styles.modalHeaderCustom}>
@@ -1310,25 +1317,31 @@ import * as ImagePicker from 'expo-image-picker';
                       </TouchableOpacity>
                         </View>
                     ))}
-                    {userPermissions.rol !== 'docente' && (
-                        <View>
-                        <Text style={styles.formLabel}>Selecciona el docente encargado *</Text>
-                                                    <Picker
-                            selectedValue={selectedDocenteId}
-                            onValueChange={(itemValue: string) => setSelectedDocenteId(itemValue)}
-                            style={styles.formControl}
-                            >
-                        <Picker.Item label="-- Selecciona un docente --" value="" />
-                        {docentes.map((doc: any) => (
-                          <Picker.Item
-                            key={doc.id}
-                            label={formatName(doc.nombre)}
-                            value={doc.id.toString()}
-                          />
-                        ))}
-                      </Picker>
-                        </View>
-                    )}
+                   {userPermissions.rol !== 'docente' && (
+  <View>
+    <Text style={styles.formLabel}>Selecciona el docente encargado *</Text>
+
+    {docentes.length === 0 ? (
+  <Text style={{ marginBottom: 12, color: '#6b7280' }}>Cargando docentes…</Text>
+) : (
+  <Picker
+    selectedValue={selectedDocenteId}
+    onValueChange={(itemValue: string) => setSelectedDocenteId(itemValue)}
+    // 👇 en iOS usa altura fija (rueda); en Android tu estilo actual
+    style={Platform.OS === 'ios' ? styles.iosPicker : styles.formControl}
+  >
+    <Picker.Item label="-- Selecciona un docente --" value="" />
+    {docentes.map((doc: any) => (
+      <Picker.Item
+        key={String(doc.id)}
+        label={formatName(doc.nombre)}
+        value={String(doc.id)}
+      />
+    ))}
+  </Picker>
+)}
+  </View>
+)}
                     {/* Add date pickers for pickup and return */}
                     </View>
                     <View style={styles.modalFooterCustom}>
@@ -2023,6 +2036,14 @@ import * as ImagePicker from 'expo-image-picker';
         color: '#1f2937',
         fontSize: 14,
     },
+    iosPicker: {
+  height: 216,             
+  backgroundColor: '#fff',
+  borderRadius: 6,
+  borderWidth: 1,
+  borderColor: '#d1d5db',
+  marginBottom: 16,
+},
     cartItemQuantity: {
         color: '#00509e',
         fontSize: 12,
