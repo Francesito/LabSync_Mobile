@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,14 +18,15 @@ import {
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
+// eslint-disable-next-line import/no-unresolved
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { API_URL } from '@/constants/api';
 import { useAuth } from '../../lib/auth';
-import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-const { width, height } = Dimensions.get('window');
+const windowDimensions = Dimensions.get('window');
 
 function toLocalDateStr(date: Date): string {
   const offset = date.getTimezoneOffset();
@@ -48,8 +49,6 @@ export default function CatalogoScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRiesgoFisico, setSelectedRiesgoFisico] = useState('');
-  const [selectedRiesgoSalud, setSelectedRiesgoSalud] = useState('');
   const [lowStockMaterials, setLowStockMaterials] = useState<any[]>([]);
   const [docentes, setDocentes] = useState<any[]>([]);
   const [selectedDocenteId, setSelectedDocenteId] = useState('');
@@ -83,41 +82,53 @@ export default function CatalogoScreen() {
   const [permissionsLoading, setPermissionsLoading] = useState(true);
   const [permissionsError, setPermissionsError] = useState('');
   const [showCartModal, setShowCartModal] = useState(false);
-  const cartPosition = new Animated.ValueXY({ x: width - 80, y: height - 150 });
-  const [cartPos, setCartPos] = useState({ x: width - 80, y: height - 150 });
-
-useEffect(() => {
-  const listenerId = cartPosition.addListener(({ x, y }) => {
-    setCartPos({ x, y });
+  const [screenWidth, setScreenWidth] = useState(windowDimensions.width);
+  const [screenHeight, setScreenHeight] = useState(windowDimensions.height);
+  const cartPosition = useRef(
+    new Animated.ValueXY({ x: screenWidth - 80, y: screenHeight - 150 })
+  ).current;
+  const [cartPos, setCartPos] = useState({
+    x: screenWidth - 80,
+    y: screenHeight - 150,
   });
-  return () => cartPosition.removeListener(listenerId);
-}, []);
+  
+  useEffect(() => {
+    const id = cartPosition.addListener(({ x, y }) => setCartPos({ x, y }));
+    return () => cartPosition.removeListener(id);
+  }, [cartPosition]);
 
-const panResponder = PanResponder.create({
-  onStartShouldSetPanResponder: () => true,
-  onPanResponderMove: Animated.event(
-    [null, { dx: cartPosition.x, dy: cartPosition.y }],
-    { useNativeDriver: false }
-  ),
-  onPanResponderRelease: () => {
-    Animated.spring(cartPosition, {
-      toValue: {
-        x: Math.max(0, Math.min(cartPos.x, width - 60)),
-        y: Math.max(0, Math.min(cartPos.y, height - 60)),
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        cartPosition.setOffset({ x: cartPos.x, y: cartPos.y });
+        cartPosition.setValue({ x: 0, y: 0 });
       },
-      useNativeDriver: false,
-    }).start();
-  },
-});
+     onPanResponderMove: Animated.event(
+        [null, { dx: cartPosition.x, dy: cartPosition.y }],
+        { useNativeDriver: false }
+      ),
+      onPanResponderRelease: () => {
+        cartPosition.flattenOffset();
+        Animated.spring(cartPosition, {
+          toValue: {
+            x: Math.max(0, Math.min(cartPos.x, screenWidth - 60)),
+            y: Math.max(0, Math.min(cartPos.y, screenHeight - 60)),
+          },
+          useNativeDriver: false,
+        }).start();
+      },
+    })
+  ).current;
 
   const LOW_STOCK_THRESHOLD = 50;
   const CLOUDINARY_CLOUD_NAME = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || 'tu-cloud-name';
 
   useEffect(() => {
-    const updateDimensions = () => {
-      const newWidth = Dimensions.get('window').width;
-    };
-    const subscription = Dimensions.addEventListener('change', updateDimensions);
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenWidth(window.width);
+      setScreenHeight(window.height);
+    });
     return () => subscription?.remove();
   }, []);
 
@@ -625,15 +636,9 @@ const panResponder = PanResponder.create({
     }
   };
 
-  const filteredMaterials = allMaterials.filter((m) => {
-    const matchesSearch = formatName(m.nombre).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRiesgoFisico =
-      selectedRiesgoFisico === '' || (m.riesgos_fisicos && m.riesgos_fisicos.includes(selectedRiesgoFisico));
-    const matchesRiesgoSalud =
-      selectedRiesgoSalud === '' || (m.riesgos_salud && m.riesgos_salud.includes(selectedRiesgoSalud));
-
-    return matchesSearch && matchesRiesgoFisico && matchesRiesgoSalud;
-  });
+   const filteredMaterials = allMaterials.filter((m) =>
+    formatName(m.nombre).toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleAdjustClick = (material: any) => {
     if (!canModifyStock()) {
@@ -867,7 +872,7 @@ const panResponder = PanResponder.create({
     );
   }
 
-  const cardWidth = (width - 32 - 16) / 3; // Padding 16 sides, gap 8 between cards
+ const cardWidth = (screenWidth - 32 - 16) / 3; // Padding 16 sides, gap 8 between cards
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -886,71 +891,6 @@ const panResponder = PanResponder.create({
             )}
             <Text style={styles.headerTitle}>Catálogo de Materiales</Text>
           </View>
-
-          {userPermissions.rol === 'almacen' && canModifyStock() && lowStockMaterials.length > 0 && (
-            <View style={styles.lowStockAlerts}>
-              <View style={styles.lowStockHeader}>
-                <View style={styles.lowStockIconContainer}>
-                  <Text style={styles.lowStockIcon}>!</Text>
-                </View>
-                <View>
-                  <Text style={styles.lowStockTitle}>Advertencia de Stock Bajo</Text>
-                  <Text style={styles.lowStockSubtitle}>
-                    Materiales con stock por debajo de {LOW_STOCK_THRESHOLD} unidades:
-                  </Text>
-                </View>
-              </View>
-              <FlatList
-                data={lowStockMaterials}
-                keyExtractor={(item) => `${item.tipo}-${item.id}`}
-                renderItem={({ item }) => (
-                  <View style={styles.lowStockItem}>
-                    <View style={styles.lowStockContent}>
-                      <Text style={styles.lowStockMaterial}>
-                        {formatName(item.nombre)} ({item.tipo})
-                      </Text>
-                      <Text style={styles.lowStockQuantity}>
-                        Stock: {item.cantidad} {getUnidad(item.tipo)}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.dismissBtn}
-                      onPress={() => dismissLowStockAlert(item.id, item.tipo)}
-                    >
-                      <Text style={styles.dismissBtnText}>×</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              />
-            </View>
-          )}
-
-          <View style={styles.searchFilterContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar materiales..."
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-            />
-            {userPermissions.rol !== 'alumno' && (
-              <>
-                <TextInput
-                  style={styles.filterSelect}
-                  placeholder="Todos los riesgos físicos"
-                  value={selectedRiesgoFisico}
-                  onChangeText={setSelectedRiesgoFisico}
-                />
-                <TextInput
-                  style={styles.filterSelect}
-                  placeholder="Todos los riesgos de salud"
-                  value={selectedRiesgoSalud}
-                  onChangeText={setSelectedRiesgoSalud}
-                />
-              </>
-            )}
-          </View>
-
-          {error && <Text style={styles.alertCustom}>{error}</Text>}
 
           {loading ? (
             <View style={styles.loadingSpinner}>
@@ -988,38 +928,81 @@ const panResponder = PanResponder.create({
                     <Text style={[styles.materialCardType, { backgroundColor: getTypeColor(item.tipo).backgroundColor, color: getTypeColor(item.tipo).color }]}>
                       {item.tipo}
                     </Text>
-                    <Text style={[styles.materialCardStock, { color: getStockColor(item) }]}>
-                      {displayStock(item)}
-                    </Text>
+                     <Text style={[styles.materialCardStock, { color: getStockColor(item) }]}> {displayStock(item)}</Text>
                   </View>
                 </TouchableOpacity>
               )}
               numColumns={3}
               contentContainerStyle={styles.materialGrid}
-              columnWrapperStyle={{ justifyContent: 'space-between' }}
+             columnWrapperStyle={{ justifyContent: 'center' }}
+              ListHeaderComponent={(
+                <>
+                  {userPermissions.rol === 'almacen' && canModifyStock() && lowStockMaterials.length > 0 && (
+                    <View style={styles.lowStockAlerts}>
+                      <View style={styles.lowStockHeader}>
+                        <View style={styles.lowStockIconContainer}>
+                          <Text style={styles.lowStockIcon}>!</Text>
+                        </View>
+                        <View>
+                          <Text style={styles.lowStockTitle}>Advertencia de Stock Bajo</Text>
+                          <Text style={styles.lowStockSubtitle}>
+                            Materiales con stock por debajo de {LOW_STOCK_THRESHOLD} unidades:
+                          </Text>
+                        </View>
+                      </View>
+                      {lowStockMaterials.map((item) => (
+                        <View key={`${item.tipo}-${item.id}`} style={styles.lowStockItem}>
+                          <View style={styles.lowStockContent}>
+                            <Text style={styles.lowStockMaterial}>
+                              {formatName(item.nombre)} ({item.tipo})
+                            </Text>
+                            <Text style={styles.lowStockQuantity}>
+                              Stock: {item.cantidad} {getUnidad(item.tipo)}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.dismissBtn}
+                            onPress={() => dismissLowStockAlert(item.id, item.tipo)}
+                          >
+                            <Text style={styles.dismissBtnText}>×</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  <View style={styles.searchFilterContainer}>
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="Buscar materiales..."
+                      value={searchTerm}
+                      onChangeText={setSearchTerm}
+                    />
+                  </View>
+                  {error && <Text style={styles.alertCustom}>{error}</Text>}
+                </>
+              )}
             />
           )}
 
           {(userPermissions.rol === 'alumno' || userPermissions.rol === 'docente') && (
-            <PanGestureHandler onGestureEvent={Animated.event([
-              { nativeEvent: { translationX: cartPosition.x, translationY: cartPosition.y } }
-            ], { useNativeDriver: true })}>
-              <Animated.View style={[
+              <Animated.View
+              style={[
                 styles.floatingCart,
                 {
                   transform: [{ translateX: cartPosition.x }, { translateY: cartPosition.y }],
                 },
-              ]}>
-                <TouchableOpacity onPress={() => setShowCartModal(true)}>
-                  <Ionicons name="cart" size={32} color="#fff" />
-                  {totalItems > 0 && (
-                    <View style={styles.cartBadge}>
-                      <Text style={styles.cartBadgeText}>{totalItems}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
-            </PanGestureHandler>
+              ]}
+              {...panResponder.panHandlers}
+            >
+              <TouchableOpacity onPress={() => setShowCartModal(true)}>
+                <Ionicons name="cart" size={32} color="#fff" />
+                {totalItems > 0 && (
+                  <View style={styles.cartBadge}>
+                    <Text style={styles.cartBadgeText}>{totalItems}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
           )}
 
           <Modal visible={showCartModal} animationType="fade" transparent={true} onRequestClose={() => setShowCartModal(false)}>
@@ -1088,7 +1071,7 @@ const panResponder = PanResponder.create({
 
           <Modal visible={showDetailModal} animationType="fade" transparent={true} onRequestClose={() => setShowDetailModal(false)}>
             <View style={styles.modalOverlay}>
-              <ScrollView contentContainerStyle={styles.modalContentCustom}>
+             <View style={styles.modalContentCustom}>
                 <View style={styles.modalHeaderCustom}>
                   <Text style={styles.modalTitle}>Detalles: {formatName(selectedMaterial?.nombre || '')}</Text>
                   <TouchableOpacity onPress={() => setShowDetailModal(false)}>
@@ -1173,13 +1156,13 @@ const panResponder = PanResponder.create({
                     <Text style={styles.btnSecondaryText}>Cerrar</Text>
                   </TouchableOpacity>
                 </View>
-              </ScrollView>
+              </View>
             </View>
           </Modal>
 
           <Modal visible={showRequestModal} animationType="fade" transparent={true} onRequestClose={() => setShowRequestModal(false)}>
             <View style={styles.modalOverlay}>
-              <ScrollView contentContainerStyle={styles.modalContentCustom}>
+             <View style={styles.modalContentCustom}>
                 <View style={styles.modalHeaderCustom}>
                   <Text style={styles.modalTitle}>Confirmar Solicitud</Text>
                   <TouchableOpacity onPress={() => setShowRequestModal(false)}>
@@ -1189,17 +1172,13 @@ const panResponder = PanResponder.create({
                 <View style={styles.modalBody}>
                   {error && <Text style={styles.alertCustom}>{error}</Text>}
                   <Text style={styles.infoAlert}>Estás a punto de crear un vale con los siguientes materiales:</Text>
-                  <FlatList
-                    data={selectedCart}
-                    keyExtractor={(item) => `${item.tipo}-${item.id}`}
-                    renderItem={({ item }) => (
-                      <View style={styles.requestItem}>
-                        <Text style={styles.fontSemibold}>{formatName(item.nombre)}</Text>
-                        <Text style={styles.fontRegular}>{item.tipo}</Text>
-                        <Text style={styles.fontBold}>{item.cantidad} {getUnidad(item.tipo)}</Text>
-                      </View>
-                    )}
-                  />
+                  {selectedCart.map((item) => (
+                    <View key={`${item.tipo}-${item.id}`} style={styles.requestItem}>
+                      <Text style={styles.fontSemibold}>{formatName(item.nombre)}</Text>
+                      <Text style={styles.fontRegular}>{item.tipo}</Text>
+                      <Text style={styles.fontBold}>{item.cantidad} {getUnidad(item.tipo)}</Text>
+                    </View>
+                  ))}
                   {userPermissions.rol !== 'docente' && (
                     <View>
                       <Text style={styles.formLabel}>Selecciona el docente encargado *</Text>
@@ -1220,13 +1199,13 @@ const panResponder = PanResponder.create({
                     <Text style={styles.btnText}>{isSubmittingRequest ? 'Enviando...' : 'Confirmar'}</Text>
                   </TouchableOpacity>
                 </View>
-              </ScrollView>
+             </View>
             </View>
           </Modal>
 
           <Modal visible={showAdjustModal} animationType="fade" transparent={true} onRequestClose={() => setShowAdjustModal(false)}>
             <View style={styles.modalOverlay}>
-              <ScrollView contentContainerStyle={styles.modalContentCustom}>
+              <View style={styles.modalContentCustom}>
                 <View style={styles.modalHeaderCustom}>
                   <Text style={styles.modalTitle}>Ajustar Inventario: {formatName(materialToAdjust?.nombre || '')}</Text>
                   <TouchableOpacity onPress={() => setShowAdjustModal(false)}>
@@ -1263,13 +1242,13 @@ const panResponder = PanResponder.create({
                     <Text style={styles.btnText}>Eliminar</Text>
                   </TouchableOpacity>
                 </View>
-              </ScrollView>
+              </View>
             </View>
           </Modal>
 
           <Modal visible={showMassAdjustModal} animationType="fade" transparent={true} onRequestClose={() => setShowMassAdjustModal(false)}>
             <View style={styles.modalOverlay}>
-              <ScrollView contentContainerStyle={styles.modalContentCustom}>
+              <View style={styles.modalContentCustom}>
                 <View style={styles.modalHeaderCustom}>
                   <Text style={styles.modalTitle}>Ajuste Masivo de Inventario</Text>
                   <TouchableOpacity onPress={() => setShowMassAdjustModal(false)}>
@@ -1324,13 +1303,13 @@ const panResponder = PanResponder.create({
                     <Text style={styles.btnText}>Guardar</Text>
                   </TouchableOpacity>
                 </View>
-              </ScrollView>
+              </View>
             </View>
           </Modal>
 
           <Modal visible={showAddModal} animationType="fade" transparent={true} onRequestClose={() => setShowAddModal(false)}>
             <View style={styles.modalOverlay}>
-              <ScrollView contentContainerStyle={styles.modalContentCustom}>
+              <View style={styles.modalContentCustom}>
                 <View style={styles.modalHeaderCustom}>
                   <Text style={styles.modalTitle}>Agregar Material / Reactivo</Text>
                   <TouchableOpacity onPress={() => setShowAddModal(false)}>
@@ -1415,7 +1394,7 @@ const panResponder = PanResponder.create({
                     <Text style={styles.btnText}>Crear</Text>
                   </TouchableOpacity>
                 </View>
-              </ScrollView>
+               </View>
             </View>
           </Modal>
         </LinearGradient>
@@ -1461,12 +1440,16 @@ const styles = StyleSheet.create({
   headerSection: {
     padding: 16,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+     flexWrap: 'wrap',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   headerButtons: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 8,
+     marginBottom: 8,
   },
   btnAddMaterial: {
     backgroundColor: '#00c16e',
@@ -1490,6 +1473,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 24,
     fontWeight: '700',
+     textAlign: 'center',
+    width: '100%',
   },
   lowStockAlerts: {
     backgroundColor: '#fef7cd',
@@ -1589,6 +1574,7 @@ const styles = StyleSheet.create({
   },
   materialGrid: {
     padding: 16,
+      alignItems: 'center',
   },
   materialCard: {
     backgroundColor: '#fff',
@@ -1610,7 +1596,7 @@ const styles = StyleSheet.create({
   },
   materialImage: {
     width: '100%',
-    height: (width - 32 - 16) / 3 * 0.8, // Keep aspect for full image view
+      height: ((Dimensions.get('window').width - 32 - 16) / 3) * 0.8, 
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
