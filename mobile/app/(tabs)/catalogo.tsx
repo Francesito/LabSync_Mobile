@@ -14,6 +14,7 @@ import {
   Image,
   Animated,
   PanResponder,
+  Keyboard,
 } from 'react-native';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
@@ -61,6 +62,7 @@ export default function CatalogoScreen() {
   const [massAdjustments, setMassAdjustments] = useState<any>({});
   const [massSearchTerm, setMassSearchTerm] = useState('');
   const [massError, setMassError] = useState('');
+   const [showAllMassMaterials, setShowAllMassMaterials] = useState(false);
   const [newMaterial, setNewMaterial] = useState({
     tipoGeneral: 'Reactivo',
     subTipo: '',
@@ -709,7 +711,8 @@ export default function CatalogoScreen() {
   };
 
   const handleMassAdjustChange = (material: any, value: string) => {
-    const delta = parseInt(value, 10);
+     const sanitized = value.replace(/[^0-9-]/g, '');
+    const delta = parseInt(sanitized, 10);
     const key = `${material.id}-${material.tipo}`;
     if (isNaN(delta) || delta === 0) {
       setMassAdjustments((prev: any) => {
@@ -764,6 +767,14 @@ export default function CatalogoScreen() {
       console.error('Error en ajuste masivo:', err);
       setMassError(err.response?.data?.error || 'No se pudo ajustar el stock');
     }
+  };
+
+    const handleDetailAmountChange = (value: string) => {
+    setDetailAmount(value.replace(/[^0-9]/g, ''));
+  };
+
+  const handleAdjustAmountChange = (value: string) => {
+    setAdjustAmount(value.replace(/[^0-9-]/g, ''));
   };
 
   const handleAddSubmit = async () => {
@@ -874,6 +885,13 @@ export default function CatalogoScreen() {
 
  const cardWidth = (screenWidth - 32 - 16) / 3; // Padding 16 sides, gap 8 between cards
 
+   const filteredMassMaterials = allMaterials.filter((m) =>
+    formatName(m.nombre).toLowerCase().includes(massSearchTerm.toLowerCase())
+  );
+  const displayedMassMaterials = showAllMassMaterials
+    ? filteredMassMaterials
+    : filteredMassMaterials.slice(0, 8);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.safeArea}>
@@ -884,7 +902,13 @@ export default function CatalogoScreen() {
                 <TouchableOpacity style={styles.btnAddMaterial} onPress={() => setShowAddModal(true)}>
                   <Text style={styles.btnText}>Agregar Material/Reactivo</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.btnMassAdjust} onPress={() => setShowMassAdjustModal(true)}>
+               <TouchableOpacity
+                  style={styles.btnMassAdjust}
+                  onPress={() => {
+                    setShowAllMassMaterials(false);
+                    setShowMassAdjustModal(true);
+                  }}
+                >
                   <Text style={styles.btnText}>Ajuste Masivo</Text>
                 </TouchableOpacity>
               </View>
@@ -919,7 +943,11 @@ export default function CatalogoScreen() {
                   activeOpacity={0.7}
                 >
                   <Image
-                    source={{ uri: item.imagen_url || '' }}
+                   source={
+                      item.imagen_url
+                        ? { uri: item.imagen_url }
+                        : require('../../assets/images/react-logo.png')
+                    }
                     style={styles.materialImage}
                     resizeMode="contain"
                   />
@@ -976,6 +1004,8 @@ export default function CatalogoScreen() {
                       placeholder="Buscar materiales..."
                       value={searchTerm}
                       onChangeText={setSearchTerm}
+                        returnKeyType="done"
+                      onSubmitEditing={Keyboard.dismiss}
                     />
                   </View>
                   {error && <Text style={styles.alertCustom}>{error}</Text>}
@@ -1086,7 +1116,11 @@ export default function CatalogoScreen() {
                     </Text>
                   )}
                   <Image
-                    source={{ uri: selectedMaterial?.imagen_url || '' }}
+                   source={
+                      selectedMaterial?.imagen_url
+                        ? { uri: selectedMaterial.imagen_url }
+                        : require('../../assets/images/react-logo.png')
+                    }
                     style={styles.detailImage}
                     resizeMode="contain"
                   />
@@ -1128,9 +1162,11 @@ export default function CatalogoScreen() {
                       <TextInput
                         style={styles.quantityInput}
                         value={detailAmount}
-                        onChangeText={setDetailAmount}
+                     onChangeText={handleDetailAmountChange}
                         placeholder="Ingresa cantidad"
-                        keyboardType="number-pad"
+                       keyboardType="default"
+                        returnKeyType="done"
+                        onSubmitEditing={Keyboard.dismiss}
                         editable={selectedMaterial?.cantidad !== 0}
                       />
                       <TouchableOpacity
@@ -1225,9 +1261,11 @@ export default function CatalogoScreen() {
                   <TextInput
                     style={styles.formControl}
                     value={adjustAmount}
-                    onChangeText={setAdjustAmount}
+                    onChangeText={handleAdjustAmountChange}
                     placeholder="Añade o quita stock"
-                    keyboardType="number-pad"
+                     keyboardType="default"
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
                     editable={canModifyStock()}
                   />
                 </View>
@@ -1246,12 +1284,25 @@ export default function CatalogoScreen() {
             </View>
           </Modal>
 
-          <Modal visible={showMassAdjustModal} animationType="fade" transparent={true} onRequestClose={() => setShowMassAdjustModal(false)}>
+           <Modal
+            visible={showMassAdjustModal}
+            animationType="fade"
+            transparent={true}
+            onRequestClose={() => {
+              setShowMassAdjustModal(false);
+              setShowAllMassMaterials(false);
+            }}
+          >
             <View style={styles.modalOverlay}>
               <View style={styles.modalContentCustom}>
                 <View style={styles.modalHeaderCustom}>
                   <Text style={styles.modalTitle}>Ajuste Masivo de Inventario</Text>
-                  <TouchableOpacity onPress={() => setShowMassAdjustModal(false)}>
+                    <TouchableOpacity
+                    onPress={() => {
+                      setShowMassAdjustModal(false);
+                      setShowAllMassMaterials(false);
+                    }}
+                  >
                     <Ionicons name="close" size={24} color="#fff" />
                   </TouchableOpacity>
                 </View>
@@ -1262,9 +1313,11 @@ export default function CatalogoScreen() {
                     placeholder="Buscar..."
                     value={massSearchTerm}
                     onChangeText={setMassSearchTerm}
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
                   />
                   <FlatList
-                    data={allMaterials.filter((m) => formatName(m.nombre).toLowerCase().includes(massSearchTerm.toLowerCase()))}
+                      data={displayedMassMaterials}
                     keyExtractor={(item) => `${item.tipo}-${item.id}`}
                     renderItem={({ item }) => (
                       <View style={styles.massAdjustItem}>
@@ -1274,11 +1327,22 @@ export default function CatalogoScreen() {
                           placeholder={getUnidad(item.tipo)}
                           value={massAdjustments[`${item.id}-${item.tipo}`]?.cantidad?.toString() ?? ''}
                           onChangeText={(value) => handleMassAdjustChange(item, value)}
-                          keyboardType="number-pad"
+                           keyboardType="default"
+                          returnKeyType="done"
+                          onSubmitEditing={Keyboard.dismiss}
                         />
                       </View>
                     )}
+                    style={showAllMassMaterials ? styles.massList : undefined}
                   />
+                    {!showAllMassMaterials && filteredMassMaterials.length > 8 && (
+                    <TouchableOpacity
+                      style={styles.showMoreButton}
+                      onPress={() => setShowAllMassMaterials(true)}
+                    >
+                      <Text style={styles.showMoreText}>Mostrar más</Text>
+                    </TouchableOpacity>
+                  )}
                   {Object.values(massAdjustments).length > 0 && (
                     <View style={styles.massTags}>
                       {Object.values(massAdjustments).map((a: any) => {
@@ -1296,7 +1360,13 @@ export default function CatalogoScreen() {
                   )}
                 </View>
                 <View style={styles.modalFooterCustom}>
-                  <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowMassAdjustModal(false)}>
+                  <TouchableOpacity
+                    style={styles.btnSecondaryCustom}
+                    onPress={() => {
+                      setShowMassAdjustModal(false);
+                      setShowAllMassMaterials(false);
+                    }}
+                  >
                     <Text style={styles.btnSecondaryText}>Cancelar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.btnCreateVale} onPress={handleMassAdjustSubmit} disabled={Object.values(massAdjustments).length === 0}>
@@ -1342,8 +1412,15 @@ export default function CatalogoScreen() {
                   <TextInput
                     style={styles.formControl}
                     value={newMaterial.cantidad_inicial}
-                    onChangeText={(value) => setNewMaterial({ ...newMaterial, cantidad_inicial: value })}
-                    keyboardType="number-pad"
+                    onChangeText={(value) =>
+                      setNewMaterial({
+                        ...newMaterial,
+                        cantidad_inicial: value.replace(/[^0-9]/g, ''),
+                      })
+                    }
+                    keyboardType="default"
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
                   />
                   <Text style={styles.formLabel}>Estado *</Text>
                   <TextInput
@@ -1550,6 +1627,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+     alignSelf: 'stretch',
+    width: '100%',
   },
   searchInput: {
     borderWidth: 1,
@@ -1558,6 +1637,7 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
     backgroundColor: '#fff',
+     width: '100%',
   },
   filterSelect: {
     borderWidth: 1,
@@ -1913,6 +1993,17 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     padding: 8,
     fontSize: 14,
+  },
+  massList: {
+    maxHeight: 250,
+  },
+  showMoreButton: {
+    padding: 12,
+    alignItems: 'center',
+  },
+  showMoreText: {
+    color: '#1d4ed8',
+    fontWeight: '600',
   },
   massTags: {
     flexDirection: 'row',
