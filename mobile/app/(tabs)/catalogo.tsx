@@ -62,7 +62,6 @@ export default function CatalogoScreen() {
   const [massAdjustments, setMassAdjustments] = useState<any>({});
   const [massSearchTerm, setMassSearchTerm] = useState('');
   const [massError, setMassError] = useState('');
-   const [showAllMassMaterials, setShowAllMassMaterials] = useState(false);
   const [newMaterial, setNewMaterial] = useState({
     tipoGeneral: 'Reactivo',
     subTipo: '',
@@ -86,23 +85,31 @@ export default function CatalogoScreen() {
   const [showCartModal, setShowCartModal] = useState(false);
   const [screenWidth, setScreenWidth] = useState(windowDimensions.width);
   const [screenHeight, setScreenHeight] = useState(windowDimensions.height);
-  const cartPosition = useRef(
-    new Animated.ValueXY({ x: screenWidth - 80, y: screenHeight - 150 })
-  ).current;
-  const [cartPos, setCartPos] = useState({
-    x: screenWidth - 80,
-    y: screenHeight - 150,
-  });
+ const initialCartPos = { x: screenWidth - 80, y: 20 };
+  const cartPosition = useRef(new Animated.ValueXY(initialCartPos)).current;
+  const [cartPos, setCartPos] = useState(initialCartPos);
   
   useEffect(() => {
     const id = cartPosition.addListener(({ x, y }) => setCartPos({ x, y }));
     return () => cartPosition.removeListener(id);
   }, [cartPosition]);
 
+    const resetCartPosition = () => {
+    const start = { x: screenWidth - 80, y: 20 };
+    cartPosition.setValue(start);
+    setCartPos(start);
+  };
+
+  const closeCartModal = () => {
+    setShowCartModal(false);
+    resetCartPosition();
+  };
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
+         cartPosition.stopAnimation();
         cartPosition.setOffset({ x: cartPos.x, y: cartPos.y });
         cartPosition.setValue({ x: 0, y: 0 });
       },
@@ -112,11 +119,12 @@ export default function CatalogoScreen() {
       ),
       onPanResponderRelease: () => {
         cartPosition.flattenOffset();
-        Animated.spring(cartPosition, {
+         Animated.timing(cartPosition, {
           toValue: {
             x: Math.max(0, Math.min(cartPos.x, screenWidth - 60)),
             y: Math.max(0, Math.min(cartPos.y, screenHeight - 60)),
           },
+           duration: 100,
           useNativeDriver: false,
         }).start();
       },
@@ -888,9 +896,6 @@ export default function CatalogoScreen() {
    const filteredMassMaterials = allMaterials.filter((m) =>
     formatName(m.nombre).toLowerCase().includes(massSearchTerm.toLowerCase())
   );
-  const displayedMassMaterials = showAllMassMaterials
-    ? filteredMassMaterials
-    : filteredMassMaterials.slice(0, 8);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -905,7 +910,6 @@ export default function CatalogoScreen() {
                <TouchableOpacity
                   style={styles.btnMassAdjust}
                   onPress={() => {
-                    setShowAllMassMaterials(false);
                     setShowMassAdjustModal(true);
                   }}
                 >
@@ -1035,14 +1039,19 @@ export default function CatalogoScreen() {
             </Animated.View>
           )}
 
-          <Modal visible={showCartModal} animationType="fade" transparent={true} onRequestClose={() => setShowCartModal(false)}>
+          <Modal visible={showCartModal} animationType="fade" transparent={true} onRequestClose={closeCartModal}>
             <View style={styles.modalOverlay}>
               <View style={styles.cartContainer}>
                 <View style={styles.cartHeader}>
-                  <Text style={styles.cartHeaderTitle}>Carrito de Solicitud</Text>
-                  <Text style={styles.cartHeaderSmall}>
-                    {totalItems} {totalItems === 1 ? 'material' : 'materiales'} seleccionados
-                  </Text>
+                 <View>
+                    <Text style={styles.cartHeaderTitle}>Carrito de Solicitud</Text>
+                    <Text style={styles.cartHeaderSmall}>
+                      {totalItems} {totalItems === 1 ? 'material' : 'materiales'} seleccionados
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={closeCartModal}>
+                    <Ionicons name="close" size={24} color="#003579" />
+                  </TouchableOpacity>
                 </View>
                 <ScrollView style={styles.cartBody}>
                   {selectedCart.length === 0 ? (
@@ -1076,7 +1085,7 @@ export default function CatalogoScreen() {
                     <TouchableOpacity
                       style={styles.btnCreateVale}
                       onPress={() => {
-                        setShowCartModal(false);
+                       closeCartModal();
                         setShowRequestModal(true);
                       }}
                       disabled={selectedCart.length === 0 || totalItems === 0 || !canMakeRequests()}
@@ -1092,7 +1101,7 @@ export default function CatalogoScreen() {
                     </TouchableOpacity>
                   </View>
                 )}
-                <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowCartModal(false)}>
+               <TouchableOpacity style={styles.btnSecondaryCustom} onPress={closeCartModal}>
                   <Text style={styles.btnSecondaryText}>Cerrar</Text>
                 </TouchableOpacity>
               </View>
@@ -1288,21 +1297,13 @@ export default function CatalogoScreen() {
             visible={showMassAdjustModal}
             animationType="fade"
             transparent={true}
-            onRequestClose={() => {
-              setShowMassAdjustModal(false);
-              setShowAllMassMaterials(false);
-            }}
-          >
+             onRequestClose={() => setShowMassAdjustModal(false)}
+             >
             <View style={styles.modalOverlay}>
               <View style={styles.modalContentCustom}>
                 <View style={styles.modalHeaderCustom}>
                   <Text style={styles.modalTitle}>Ajuste Masivo de Inventario</Text>
-                    <TouchableOpacity
-                    onPress={() => {
-                      setShowMassAdjustModal(false);
-                      setShowAllMassMaterials(false);
-                    }}
-                  >
+                       <TouchableOpacity onPress={() => setShowMassAdjustModal(false)}>
                     <Ionicons name="close" size={24} color="#fff" />
                   </TouchableOpacity>
                 </View>
@@ -1317,7 +1318,7 @@ export default function CatalogoScreen() {
                     onSubmitEditing={Keyboard.dismiss}
                   />
                   <FlatList
-                      data={displayedMassMaterials}
+                   data={filteredMassMaterials}
                     keyExtractor={(item) => `${item.tipo}-${item.id}`}
                     renderItem={({ item }) => (
                       <View style={styles.massAdjustItem}>
@@ -1333,16 +1334,8 @@ export default function CatalogoScreen() {
                         />
                       </View>
                     )}
-                    style={showAllMassMaterials ? styles.massList : undefined}
+                    style={styles.massList}
                   />
-                    {!showAllMassMaterials && filteredMassMaterials.length > 8 && (
-                    <TouchableOpacity
-                      style={styles.showMoreButton}
-                      onPress={() => setShowAllMassMaterials(true)}
-                    >
-                      <Text style={styles.showMoreText}>Mostrar más</Text>
-                    </TouchableOpacity>
-                  )}
                   {Object.values(massAdjustments).length > 0 && (
                     <View style={styles.massTags}>
                       {Object.values(massAdjustments).map((a: any) => {
@@ -1362,10 +1355,7 @@ export default function CatalogoScreen() {
                 <View style={styles.modalFooterCustom}>
                   <TouchableOpacity
                     style={styles.btnSecondaryCustom}
-                    onPress={() => {
-                      setShowMassAdjustModal(false);
-                      setShowAllMassMaterials(false);
-                    }}
+                      onPress={() => setShowMassAdjustModal(false)}
                   >
                     <Text style={styles.btnSecondaryText}>Cancelar</Text>
                   </TouchableOpacity>
@@ -1386,7 +1376,7 @@ export default function CatalogoScreen() {
                     <Ionicons name="close" size={24} color="#fff" />
                   </TouchableOpacity>
                 </View>
-                <View style={styles.modalBody}>
+                <ScrollView style={styles.modalBody} contentContainerStyle={{ paddingBottom: 16 }}>
                   {addError && <Text style={styles.alertCustom}>{addError}</Text>}
                   <Text style={styles.formLabel}>¿Es Reactivo o Material? *</Text>
                   <TextInput
@@ -1462,16 +1452,16 @@ export default function CatalogoScreen() {
                       />
                     </>
                   )}
-                </View>
-                <View style={styles.modalFooterCustom}>
-                  <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowAddModal(false)}>
-                    <Text style={styles.btnSecondaryText}>Cancelar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.btnCreateVale} onPress={handleAddSubmit}>
-                    <Text style={styles.btnText}>Crear</Text>
-                  </TouchableOpacity>
-                </View>
-               </View>
+                 <View style={styles.modalFooterCustom}>
+                    <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowAddModal(false)}>
+                      <Text style={styles.btnSecondaryText}>Cancelar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.btnCreateVale} onPress={handleAddSubmit}>
+                      <Text style={styles.btnText}>Crear</Text>
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
+              </View>
             </View>
           </Modal>
         </LinearGradient>
@@ -1621,13 +1611,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   searchFilterContainer: {
-    flexDirection: 'column',
-    gap: 8,
-    padding: 16,
+   paddingVertical: 16,
+    paddingHorizontal: 16,
     backgroundColor: '#f8fafc',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-     alignSelf: 'stretch',
     width: '100%',
   },
   searchInput: {
@@ -1637,7 +1625,8 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
     backgroundColor: '#fff',
-     width: '100%',
+      width: '100%',
+    marginBottom: 12,
   },
   filterSelect: {
     borderWidth: 1,
@@ -1762,6 +1751,7 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     padding: 16,
+     flexShrink: 1,
   },
   modalFooterCustom: {
     flexDirection: 'row',
@@ -1885,6 +1875,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+      flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   cartHeaderTitle: {
     fontSize: 18,
@@ -1902,7 +1895,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    borderRadius: 6,
+    borderRadius: 10,
     padding: 12,
     marginBottom: 8,
     flexDirection: 'row',
@@ -1996,14 +1989,6 @@ const styles = StyleSheet.create({
   },
   massList: {
     maxHeight: 250,
-  },
-  showMoreButton: {
-    padding: 12,
-    alignItems: 'center',
-  },
-  showMoreText: {
-    color: '#1d4ed8',
-    fontWeight: '600',
   },
   massTags: {
     flexDirection: 'row',
