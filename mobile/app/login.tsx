@@ -10,6 +10,7 @@ import { Link, router } from 'expo-router';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
+// eslint-disable-next-line import/no-unresolved
 import { LinearGradient } from 'expo-linear-gradient';
 import { API_URL } from '../constants/api';
 
@@ -26,7 +27,11 @@ export default function LoginScreen() {
         contrasena: password,
       });
       await SecureStore.setItemAsync('token', response.data.token);
-      await SecureStore.setItemAsync('nombre', response.data.nombre);
+       // El backend devuelve la información del usuario dentro de `usuario`
+      const nombre = response.data.usuario?.nombre || '';
+      await SecureStore.setItemAsync('nombre', nombre);
+      // Guardamos el objeto completo del usuario para futuras consultas
+      await SecureStore.setItemAsync('usuario', JSON.stringify(response.data.usuario));
       router.replace('/(tabs)');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al iniciar sesión');

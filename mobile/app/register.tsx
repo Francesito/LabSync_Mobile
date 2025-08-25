@@ -12,6 +12,7 @@ import {
 import { Link, router } from 'expo-router';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
+// eslint-disable-next-line import/no-unresolved
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../constants/api';

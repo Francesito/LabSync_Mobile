@@ -1,9 +1,9 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -13,6 +13,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+     initialRouteName="catalogo"
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
@@ -27,17 +28,38 @@ export default function TabLayout() {
         }),
       }}>
       <Tabs.Screen
-        name="index"
+        name="catalogo"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+         title: 'Catálogo',
+          tabBarIcon: ({ color }) => <Ionicons name="book" size={28} color={color} />,
+        }}
+      />
+        <Tabs.Screen
+        name="catalogo"
+        options={{
+          title: 'Catálogo',
+          tabBarIcon: ({ color }) => <Ionicons name="book" size={28} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="prestamo"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Préstamo',
+          tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal" size={28} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="residuo"
+        options={{
+          title: 'Residuo',
+          tabBarIcon: ({ color }) => <Ionicons name="trash" size={28} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="solicitudes"
+        options={{
+          title: 'Solicitudes',
+          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={28} color={color} />,
         }}
       />
     </Tabs>
