@@ -32,7 +32,7 @@ export default function LoginScreen() {
       await SecureStore.setItemAsync('nombre', nombre);
       // Guardamos el objeto completo del usuario para futuras consultas
       await SecureStore.setItemAsync('usuario', JSON.stringify(response.data.usuario));
-      router.replace('/(tabs)');
+   router.replace('/(tabs)/catalogo');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al iniciar sesión');
     }
