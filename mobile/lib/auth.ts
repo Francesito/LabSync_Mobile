@@ -13,6 +13,7 @@ interface Usuario {
  */
 export function useAuth() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
+ const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadUsuario = async () => {
@@ -20,13 +21,18 @@ export function useAuth() {
         const stored = await SecureStore.getItemAsync('usuario');
         if (stored) {
           setUsuario(JSON.parse(stored));
+           } else {
+          setUsuario(null);
         }
       } catch (err) {
         // ignore read errors
+        setUsuario(null);
+      } finally {
+        setLoading(false);
       }
     };
     loadUsuario();
   }, []);
 
-  return { usuario };
+   return { usuario, loading };
 }

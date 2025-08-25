@@ -12,19 +12,20 @@ import {
   Dimensions,
   Alert,
   Image,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
-// eslint-disable-next-line import/no-unresolved
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { API_URL } from '@/constants/api';
-// Assuming useAuth is adapted for React Native; if not, use context or similar
-import { useAuth } from '../../lib/auth'; // Adapt this import as needed
+import { useAuth } from '../../lib/auth';
+import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 function toLocalDateStr(date: Date): string {
   const offset = date.getTimezoneOffset();
@@ -32,8 +33,8 @@ function toLocalDateStr(date: Date): string {
 }
 
 export default function CatalogoScreen() {
-     const router = useRouter();
-  const { usuario } = useAuth();
+  const router = useRouter();
+  const { usuario, loading: authLoading } = useAuth();
   const [allMaterials, setAllMaterials] = useState<any[]>([]);
   const [selectedCart, setSelectedCart] = useState<any[]>([]);
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -81,7 +82,33 @@ export default function CatalogoScreen() {
   });
   const [permissionsLoading, setPermissionsLoading] = useState(true);
   const [permissionsError, setPermissionsError] = useState('');
-  const [showCart, setShowCart] = useState(width > 768); // Show cart by default on larger screens
+  const [showCartModal, setShowCartModal] = useState(false);
+  const cartPosition = new Animated.ValueXY({ x: width - 80, y: height - 150 });
+  const [cartPos, setCartPos] = useState({ x: width - 80, y: height - 150 });
+
+useEffect(() => {
+  const listenerId = cartPosition.addListener(({ x, y }) => {
+    setCartPos({ x, y });
+  });
+  return () => cartPosition.removeListener(listenerId);
+}, []);
+
+const panResponder = PanResponder.create({
+  onStartShouldSetPanResponder: () => true,
+  onPanResponderMove: Animated.event(
+    [null, { dx: cartPosition.x, dy: cartPosition.y }],
+    { useNativeDriver: false }
+  ),
+  onPanResponderRelease: () => {
+    Animated.spring(cartPosition, {
+      toValue: {
+        x: Math.max(0, Math.min(cartPos.x, width - 60)),
+        y: Math.max(0, Math.min(cartPos.y, height - 60)),
+      },
+      useNativeDriver: false,
+    }).start();
+  },
+});
 
   const LOW_STOCK_THRESHOLD = 50;
   const CLOUDINARY_CLOUD_NAME = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || 'tu-cloud-name';
@@ -89,7 +116,6 @@ export default function CatalogoScreen() {
   useEffect(() => {
     const updateDimensions = () => {
       const newWidth = Dimensions.get('window').width;
-      setShowCart(newWidth > 768);
     };
     const subscription = Dimensions.addEventListener('change', updateDimensions);
     return () => subscription?.remove();
@@ -104,13 +130,13 @@ export default function CatalogoScreen() {
     const hour = d.getHours();
 
     if (day === 6) {
-      d.setDate(d.getDate() + 2); // sábado -> lunes
+      d.setDate(d.getDate() + 2);
     } else if (day === 0) {
-      d.setDate(d.getDate() + (hour >= 21 ? 2 : 1)); // domingo
+      d.setDate(d.getDate() + (hour >= 21 ? 2 : 1));
     } else {
-      d.setDate(d.getDate() + (hour >= 21 ? 2 : 1)); // lunes-viernes
-      if (d.getDay() === 6) d.setDate(d.getDate() + 2); // cae en sábado
-      if (d.getDay() === 0) d.setDate(d.getDate() + 1); // cae en domingo
+      d.setDate(d.getDate() + (hour >= 21 ? 2 : 1));
+      if (d.getDay() === 6) d.setDate(d.getDate() + 2);
+      if (d.getDay() === 0) d.setDate(d.getDate() + 1);
     }
     d.setHours(0, 0, 0, 0);
     return d;
@@ -137,7 +163,6 @@ export default function CatalogoScreen() {
       const token = await SecureStore.getItemAsync('token');
 
       if (!token) {
-        // Redirect to login; in RN, use router
         router.replace('/login');
         return;
       }
@@ -178,7 +203,7 @@ export default function CatalogoScreen() {
       );
       setDocentes(response.data);
       if (userPermissions.rol === 'docente') {
-         setSelectedDocenteId(usuario?.id ? usuario.id.toString() : '');
+        setSelectedDocenteId(usuario?.id ? usuario.id.toString() : '');
       } else {
         setSelectedDocenteId('');
       }
@@ -272,6 +297,8 @@ export default function CatalogoScreen() {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!usuario) {
       router.replace('/login');
       return;
@@ -282,7 +309,7 @@ export default function CatalogoScreen() {
     };
 
     initializeComponent();
-  }, [usuario]);
+  }, [usuario, authLoading]);
 
   useEffect(() => {
     if (userPermissions.rol) {
@@ -549,7 +576,7 @@ export default function CatalogoScreen() {
     }
 
     const docenteIdToUse =
-        userPermissions.rol === 'docente' ? usuario?.id : parseInt(selectedDocenteId, 10);
+      userPermissions.rol === 'docente' ? usuario?.id : parseInt(selectedDocenteId, 10);
     if (userPermissions.rol !== 'docente' && !docenteIdToUse) {
       setError('Debes seleccionar un docente encargado.');
       return;
@@ -576,9 +603,9 @@ export default function CatalogoScreen() {
           fecha_solicitud: toLocalDateStr(new Date()),
           fecha_recoleccion: pickupDate,
           fecha_devolucion: returnDate,
-         aprobar_automatico: userPermissions.rol === 'docente',
-            docente_id: docenteIdToUse,
-            nombre_alumno: userPermissions.rol === 'alumno' ? formatName(usuario?.nombre ?? '') : null,
+          aprobar_automatico: userPermissions.rol === 'docente',
+          docente_id: docenteIdToUse,
+          nombre_alumno: userPermissions.rol === 'alumno' ? formatName(usuario?.nombre ?? '') : null,
         },
       });
 
@@ -586,9 +613,9 @@ export default function CatalogoScreen() {
       setPickupDate('');
       setReturnDate('');
       setShowRequestModal(false);
-       setSelectedDocenteId(
-          userPermissions.rol === 'docente' ? usuario?.id?.toString() || '' : ''
-        );
+      setSelectedDocenteId(
+        userPermissions.rol === 'docente' ? usuario?.id?.toString() || '' : ''
+      );
       router.replace('/solicitudes');
     } catch (err: any) {
       console.error('Error al enviar solicitud:', err);
@@ -767,8 +794,8 @@ export default function CatalogoScreen() {
       }
       formData.append('imagen', {
         uri: imagenFile.uri,
-        type: imagenFile.type,
-        name: imagenFile.name,
+        type: imagenFile.type || 'image/jpeg',
+        name: imagenFile.name || 'image.jpg',
       } as any);
 
       await makeSecureApiCall(`${API_URL}/api/materials/crear`, {
@@ -840,246 +867,560 @@ export default function CatalogoScreen() {
     );
   }
 
-  const numColumns = Math.floor(width / (width > 768 ? 250 : 180)); // Responsive columns
+  const cardWidth = (width - 32 - 16) / 3; // Padding 16 sides, gap 8 between cards
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#003579', '#00509e']} style={styles.container}>
-        <View style={styles.headerSection}>
-          {userPermissions.rol === 'almacen' && userPermissions.modificar_stock && (
-            <View style={styles.headerButtons}>
-              <TouchableOpacity style={styles.btnAddMaterial} onPress={() => setShowAddModal(true)}>
-                <Text style={styles.btnText}>Agregar Material/Reactivo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.btnMassAdjust} onPress={() => setShowMassAdjustModal(true)}>
-                <Text style={styles.btnText}>Ajuste Masivo</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          <Text style={styles.headerTitle}>Catálogo de Materiales</Text>
-        </View>
-
-        {userPermissions.rol === 'almacen' && canModifyStock() && lowStockMaterials.length > 0 && (
-          <View style={styles.lowStockAlerts}>
-            <View style={styles.lowStockHeader}>
-              <View style={styles.lowStockIconContainer}>
-                <Text style={styles.lowStockIcon}>!</Text>
-              </View>
-              <View>
-                <Text style={styles.lowStockTitle}>Advertencia de Stock Bajo</Text>
-                <Text style={styles.lowStockSubtitle}>
-                  Materiales con stock por debajo de {LOW_STOCK_THRESHOLD} unidades:
-                </Text>
-              </View>
-            </View>
-            {lowStockMaterials.map((material) => (
-              <View key={`${material.tipo}-${material.id}`} style={styles.lowStockItem}>
-                <View style={styles.lowStockContent}>
-                  <Text style={styles.lowStockMaterial}>
-                    {formatName(material.nombre)} ({material.tipo})
-                  </Text>
-                  <Text style={styles.lowStockQuantity}>
-                    Stock: {material.cantidad} {getUnidad(material.tipo)}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.dismissBtn}
-                  onPress={() => dismissLowStockAlert(material.id, material.tipo)}
-                >
-                  <Text style={styles.dismissBtnText}>×</Text>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient colors={['#003579', '#00509e']} style={styles.container}>
+          <View style={styles.headerSection}>
+            {userPermissions.rol === 'almacen' && userPermissions.modificar_stock && (
+              <View style={styles.headerButtons}>
+                <TouchableOpacity style={styles.btnAddMaterial} onPress={() => setShowAddModal(true)}>
+                  <Text style={styles.btnText}>Agregar Material/Reactivo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.btnMassAdjust} onPress={() => setShowMassAdjustModal(true)}>
+                  <Text style={styles.btnText}>Ajuste Masivo</Text>
                 </TouchableOpacity>
               </View>
-            ))}
+            )}
+            <Text style={styles.headerTitle}>Catálogo de Materiales</Text>
           </View>
-        )}
 
-        <View style={styles.searchFilterContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar materiales..."
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
-          {userPermissions.rol !== 'alumno' && (
-            <>
-              <TextInput
-                style={styles.filterSelect}
-                placeholder="Todos los riesgos físicos"
-                value={selectedRiesgoFisico}
-                onChangeText={setSelectedRiesgoFisico}
-              />
-              <TextInput
-                style={styles.filterSelect}
-                placeholder="Todos los riesgos de salud"
-                value={selectedRiesgoSalud}
-                onChangeText={setSelectedRiesgoSalud}
-              />
-            </>
-          )}
-        </View>
-
-        {error && <Text style={styles.alertCustom}>{error}</Text>}
-
-        {loading ? (
-          <View style={styles.loadingSpinner}>
-            <ActivityIndicator size="large" color="#003579" />
-          </View>
-        ) : (
-          <FlatList
-            data={filteredMaterials}
-            keyExtractor={(item) => `${item.tipo}-${item.id}`}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.materialCard,
-                    { width: width / numColumns - 16 },
-                  (userPermissions.rol === 'almacen' && userPermissions.modificar_stock) || canViewDetails()
-                    ? styles.materialCardClickable
-                    : styles.materialCardNonClickable,
-                ]}
-                onPress={() => {
-                  if (userPermissions.rol === 'almacen' && userPermissions.modificar_stock) {
-                    handleAdjustClick(item);
-                  } else {
-                    handleDetailClick(item);
-                  }
-                }}
-              >
-                <Image
-                  source={{ uri: item.imagen_url || '' }}
-                  style={styles.materialImage}
-                  resizeMode="contain"
-                />
-                <View style={styles.materialCardContent}>
-                  <Text style={styles.materialCardName}>{formatName(item.nombre)}</Text>
-                  <Text style={[styles.materialCardType, { backgroundColor: getTypeColor(item.tipo).backgroundColor, color: getTypeColor(item.tipo).color }]}>
-                    {item.tipo}
-                  </Text>
-                  <Text style={[styles.materialCardStock, { color: getStockColor(item) }]}>
-                    {displayStock(item)}
+          {userPermissions.rol === 'almacen' && canModifyStock() && lowStockMaterials.length > 0 && (
+            <View style={styles.lowStockAlerts}>
+              <View style={styles.lowStockHeader}>
+                <View style={styles.lowStockIconContainer}>
+                  <Text style={styles.lowStockIcon}>!</Text>
+                </View>
+                <View>
+                  <Text style={styles.lowStockTitle}>Advertencia de Stock Bajo</Text>
+                  <Text style={styles.lowStockSubtitle}>
+                    Materiales con stock por debajo de {LOW_STOCK_THRESHOLD} unidades:
                   </Text>
                 </View>
-              </TouchableOpacity>
-            )}
-            numColumns={numColumns}
-            contentContainerStyle={styles.materialGrid}
-            key={numColumns} // Re-render when columns change
-          />
-        )}
-
-        {(userPermissions.rol === 'alumno' || userPermissions.rol === 'docente') && (
-          <TouchableOpacity style={styles.cartToggle} onPress={() => setShowCart(!showCart)}>
-            <Text style={styles.cartToggleText}>Carrito de solicitudes</Text>
-          </TouchableOpacity>
-        )}
-
-        <Modal visible={showCart} animationType="slide" transparent={true}>
-          <View style={styles.cartOverlay}>
-            <View style={styles.cartContainer}>
-              <View style={styles.cartHeader}>
-                <Text style={styles.cartHeaderTitle}>Carrito de Solicitud</Text>
-                <Text style={styles.cartHeaderSmall}>
-                  {totalItems} {totalItems === 1 ? 'material' : 'materiales'} seleccionados
-                </Text>
               </View>
-              <ScrollView style={styles.cartBody}>
-                {selectedCart.length === 0 ? (
-                  <View style={styles.emptyCart}>
-                    <Text style={styles.emptyCartIcon}>🛒</Text>
-                    <Text style={styles.emptyCartText}>Carrito vacío</Text>
-                    <Text style={styles.emptyCartSmall}>Selecciona materiales para crear un vale</Text>
+              <FlatList
+                data={lowStockMaterials}
+                keyExtractor={(item) => `${item.tipo}-${item.id}`}
+                renderItem={({ item }) => (
+                  <View style={styles.lowStockItem}>
+                    <View style={styles.lowStockContent}>
+                      <Text style={styles.lowStockMaterial}>
+                        {formatName(item.nombre)} ({item.tipo})
+                      </Text>
+                      <Text style={styles.lowStockQuantity}>
+                        Stock: {item.cantidad} {getUnidad(item.tipo)}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.dismissBtn}
+                      onPress={() => dismissLowStockAlert(item.id, item.tipo)}
+                    >
+                      <Text style={styles.dismissBtnText}>×</Text>
+                    </TouchableOpacity>
                   </View>
-                ) : (
-                  selectedCart.map((item) => (
-                    <View key={`${item.tipo}-${item.id}`} style={styles.cartItem}>
-                      <View>
-                        <Text style={styles.cartItemName}>{formatName(item.nombre)}</Text>
-                        <Text style={styles.cartItemQuantity}>
-                          {item.cantidad} {getUnidad(item.tipo)} ({item.tipo})
-                        </Text>
+                )}
+              />
+            </View>
+          )}
+
+          <View style={styles.searchFilterContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar materiales..."
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+            />
+            {userPermissions.rol !== 'alumno' && (
+              <>
+                <TextInput
+                  style={styles.filterSelect}
+                  placeholder="Todos los riesgos físicos"
+                  value={selectedRiesgoFisico}
+                  onChangeText={setSelectedRiesgoFisico}
+                />
+                <TextInput
+                  style={styles.filterSelect}
+                  placeholder="Todos los riesgos de salud"
+                  value={selectedRiesgoSalud}
+                  onChangeText={setSelectedRiesgoSalud}
+                />
+              </>
+            )}
+          </View>
+
+          {error && <Text style={styles.alertCustom}>{error}</Text>}
+
+          {loading ? (
+            <View style={styles.loadingSpinner}>
+              <ActivityIndicator size="large" color="#003579" />
+            </View>
+          ) : (
+            <FlatList
+              data={filteredMaterials}
+              keyExtractor={(item) => `${item.tipo}-${item.id}`}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.materialCard,
+                    { width: cardWidth },
+                    (userPermissions.rol === 'almacen' && userPermissions.modificar_stock) || canViewDetails()
+                      ? styles.materialCardClickable
+                      : styles.materialCardNonClickable,
+                  ]}
+                  onPress={() => {
+                    if (userPermissions.rol === 'almacen' && userPermissions.modificar_stock) {
+                      handleAdjustClick(item);
+                    } else {
+                      handleDetailClick(item);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Image
+                    source={{ uri: item.imagen_url || '' }}
+                    style={styles.materialImage}
+                    resizeMode="contain"
+                  />
+                  <View style={styles.materialCardContent}>
+                    <Text style={styles.materialCardName} numberOfLines={2} ellipsizeMode="tail">{formatName(item.nombre)}</Text>
+                    <Text style={[styles.materialCardType, { backgroundColor: getTypeColor(item.tipo).backgroundColor, color: getTypeColor(item.tipo).color }]}>
+                      {item.tipo}
+                    </Text>
+                    <Text style={[styles.materialCardStock, { color: getStockColor(item) }]}>
+                      {displayStock(item)}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              numColumns={3}
+              contentContainerStyle={styles.materialGrid}
+              columnWrapperStyle={{ justifyContent: 'space-between' }}
+            />
+          )}
+
+          {(userPermissions.rol === 'alumno' || userPermissions.rol === 'docente') && (
+            <PanGestureHandler onGestureEvent={Animated.event([
+              { nativeEvent: { translationX: cartPosition.x, translationY: cartPosition.y } }
+            ], { useNativeDriver: true })}>
+              <Animated.View style={[
+                styles.floatingCart,
+                {
+                  transform: [{ translateX: cartPosition.x }, { translateY: cartPosition.y }],
+                },
+              ]}>
+                <TouchableOpacity onPress={() => setShowCartModal(true)}>
+                  <Ionicons name="cart" size={32} color="#fff" />
+                  {totalItems > 0 && (
+                    <View style={styles.cartBadge}>
+                      <Text style={styles.cartBadgeText}>{totalItems}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
+            </PanGestureHandler>
+          )}
+
+          <Modal visible={showCartModal} animationType="fade" transparent={true} onRequestClose={() => setShowCartModal(false)}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.cartContainer}>
+                <View style={styles.cartHeader}>
+                  <Text style={styles.cartHeaderTitle}>Carrito de Solicitud</Text>
+                  <Text style={styles.cartHeaderSmall}>
+                    {totalItems} {totalItems === 1 ? 'material' : 'materiales'} seleccionados
+                  </Text>
+                </View>
+                <ScrollView style={styles.cartBody}>
+                  {selectedCart.length === 0 ? (
+                    <View style={styles.emptyCart}>
+                      <Text style={styles.emptyCartIcon}>🛒</Text>
+                      <Text style={styles.emptyCartText}>Carrito vacío</Text>
+                      <Text style={styles.emptyCartSmall}>Selecciona materiales para crear un vale</Text>
+                    </View>
+                  ) : (
+                    selectedCart.map((item) => (
+                      <View key={`${item.tipo}-${item.id}`} style={styles.cartItem}>
+                        <View>
+                          <Text style={styles.cartItemName}>{formatName(item.nombre)}</Text>
+                          <Text style={styles.cartItemQuantity}>
+                            {item.cantidad} {getUnidad(item.tipo)} ({item.tipo})
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.btnRemove}
+                          onPress={() => removeFromCart(item.id, item.tipo)}
+                          disabled={!canMakeRequests()}
+                        >
+                          <Text style={styles.btnRemoveText}>×</Text>
+                        </TouchableOpacity>
                       </View>
+                    ))
+                  )}
+                </ScrollView>
+                {selectedCart.length > 0 && (
+                  <View style={styles.cartFooter}>
+                    <TouchableOpacity
+                      style={styles.btnCreateVale}
+                      onPress={() => {
+                        setShowCartModal(false);
+                        setShowRequestModal(true);
+                      }}
+                      disabled={selectedCart.length === 0 || totalItems === 0 || !canMakeRequests()}
+                    >
+                      <Text style={styles.btnText}>Crear Vale</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.btnClear}
+                      onPress={vaciarSeleccion}
+                      disabled={selectedCart.length === 0 || !canMakeRequests()}
+                    >
+                      <Text style={styles.btnText}>Vaciar Selección</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowCartModal(false)}>
+                  <Text style={styles.btnSecondaryText}>Cerrar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
+          <Modal visible={showDetailModal} animationType="fade" transparent={true} onRequestClose={() => setShowDetailModal(false)}>
+            <View style={styles.modalOverlay}>
+              <ScrollView contentContainerStyle={styles.modalContentCustom}>
+                <View style={styles.modalHeaderCustom}>
+                  <Text style={styles.modalTitle}>Detalles: {formatName(selectedMaterial?.nombre || '')}</Text>
+                  <TouchableOpacity onPress={() => setShowDetailModal(false)}>
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalBody}>
+                  {error && <Text style={styles.alertCustom}>{error}</Text>}
+                  {!canViewDetails() && (
+                    <Text style={styles.securityAlert}>
+                      ⚠️ Vista limitada: Como {userPermissions.rol}, solo puedes consultar la información básica del material.
+                    </Text>
+                  )}
+                  <Image
+                    source={{ uri: selectedMaterial?.imagen_url || '' }}
+                    style={styles.detailImage}
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.modalBodyH5}>Información</Text>
+                  <Text style={styles.textMuted}>
+                    Tipo: {selectedMaterial?.tipo}
+                    {'\n'}
+                    Stock: {displayStock(selectedMaterial || {})}
+                  </Text>
+
+                  {selectedMaterial && (selectedMaterial.riesgos_fisicos || selectedMaterial.riesgos_salud || selectedMaterial.riesgos_ambientales) ? (
+                    <View>
+                      <Text style={styles.modalBodyH5}>Riesgos</Text>
+                      <View style={styles.riesgosContainer}>
+                        {parseRiesgos(selectedMaterial.riesgos_fisicos || '').map((riesgo) => (
+                          <View key={riesgo} style={[styles.riesgoBadge, { backgroundColor: getRiesgoColor(riesgo).backgroundColor }]}>
+                            <Text style={{ color: getRiesgoColor(riesgo).color }}>{getRiesgoIcon(riesgo)} {riesgo}</Text>
+                          </View>
+                        ))}
+                        {parseRiesgos(selectedMaterial.riesgos_salud || '').map((riesgo) => (
+                          <View key={riesgo} style={[styles.riesgoBadge, { backgroundColor: getRiesgoColor(riesgo).backgroundColor }]}>
+                            <Text style={{ color: getRiesgoColor(riesgo).color }}>{getRiesgoIcon(riesgo)} {riesgo}</Text>
+                          </View>
+                        ))}
+                        {parseRiesgos(selectedMaterial.riesgos_ambientales || '').map((riesgo) => (
+                          <View key={riesgo} style={[styles.riesgoBadge, { backgroundColor: getRiesgoColor(riesgo).backgroundColor }]}>
+                            <Text style={{ color: getRiesgoColor(riesgo).color }}>{getRiesgoIcon(riesgo)} {riesgo}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ) : (
+                    <Text style={styles.noRisks}>No se han registrado riesgos para este material.</Text>
+                  )}
+
+                  {canMakeRequests() && canViewDetails() && (
+                    <View style={styles.requestForm}>
+                      <Text style={styles.formLabel}>Cantidad a solicitar</Text>
+                      <TextInput
+                        style={styles.quantityInput}
+                        value={detailAmount}
+                        onChangeText={setDetailAmount}
+                        placeholder="Ingresa cantidad"
+                        keyboardType="number-pad"
+                        editable={selectedMaterial?.cantidad !== 0}
+                      />
                       <TouchableOpacity
-                        style={styles.btnRemove}
-                        onPress={() => removeFromCart(item.id, item.tipo)}
-                        disabled={!canMakeRequests()}
+                        style={styles.btnAddToCart}
+                        onPress={() => addToCart(selectedMaterial, detailAmount)}
+                        disabled={
+                          !detailAmount ||
+                          parseInt(detailAmount) <= 0 ||
+                          parseInt(detailAmount) > (selectedMaterial?.cantidad || 0) ||
+                          selectedMaterial?.cantidad === 0 ||
+                          !canMakeRequests()
+                        }
                       >
-                        <Text style={styles.btnRemoveText}>×</Text>
+                        <Text style={styles.btnText}>
+                          {selectedMaterial?.cantidad === 0 ? 'Material Agotado' : 'Añadir al carrito'}
+                        </Text>
                       </TouchableOpacity>
                     </View>
-                  ))
-                )}
-              </ScrollView>
-              {selectedCart.length > 0 && (
-                <View style={styles.cartFooter}>
-                  <TouchableOpacity
-                    style={styles.btnCreateVale}
-                    onPress={() => setShowRequestModal(true)}
-                    disabled={selectedCart.length === 0 || totalItems === 0 || !canMakeRequests()}
-                  >
-                    <Text style={styles.btnText}>Crear Vale</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.btnClear}
-                    onPress={vaciarSeleccion}
-                    disabled={selectedCart.length === 0 || !canMakeRequests()}
-                  >
-                    <Text style={styles.btnText}>Vaciar Selección</Text>
+                  )}
+                </View>
+                <View style={styles.modalFooterCustom}>
+                  <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowDetailModal(false)}>
+                    <Text style={styles.btnSecondaryText}>Cerrar</Text>
                   </TouchableOpacity>
                 </View>
-              )}
+              </ScrollView>
             </View>
-          </View>
-        </Modal>
+          </Modal>
 
-        <Modal visible={showAddModal} animationType="fade" transparent={true}>
-          <View style={styles.modalOverlay}>
-            <ScrollView contentContainerStyle={styles.modalContentCustom}>
-              <View style={styles.modalHeaderCustom}>
-                <Text style={styles.modalTitle}>Agregar Material / Reactivo</Text>
-                <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                  <Ionicons name="close" size={24} color="#fff" />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.modalBody}>
-                {addError && <Text style={styles.alertCustom}>{addError}</Text>}
-                {/* Adapt form inputs for newMaterial */}
-                {/* Note: File upload in RN requires expo-image-picker or similar; assume implemented */}
-                {/* ... Add all form fields similarly ... */}
-              </View>
-              <View style={styles.modalFooterCustom}>
-                <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowAddModal(false)}>
-                <Text style={styles.btnSecondaryText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btnCreateVale} onPress={handleAddSubmit}>
-                  <Text style={styles.btnText}>Crear</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </Modal>
+          <Modal visible={showRequestModal} animationType="fade" transparent={true} onRequestClose={() => setShowRequestModal(false)}>
+            <View style={styles.modalOverlay}>
+              <ScrollView contentContainerStyle={styles.modalContentCustom}>
+                <View style={styles.modalHeaderCustom}>
+                  <Text style={styles.modalTitle}>Confirmar Solicitud</Text>
+                  <TouchableOpacity onPress={() => setShowRequestModal(false)}>
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalBody}>
+                  {error && <Text style={styles.alertCustom}>{error}</Text>}
+                  <Text style={styles.infoAlert}>Estás a punto de crear un vale con los siguientes materiales:</Text>
+                  <FlatList
+                    data={selectedCart}
+                    keyExtractor={(item) => `${item.tipo}-${item.id}`}
+                    renderItem={({ item }) => (
+                      <View style={styles.requestItem}>
+                        <Text style={styles.fontSemibold}>{formatName(item.nombre)}</Text>
+                        <Text style={styles.fontRegular}>{item.tipo}</Text>
+                        <Text style={styles.fontBold}>{item.cantidad} {getUnidad(item.tipo)}</Text>
+                      </View>
+                    )}
+                  />
+                  {userPermissions.rol !== 'docente' && (
+                    <View>
+                      <Text style={styles.formLabel}>Selecciona el docente encargado *</Text>
+                      <TextInput
+                        style={styles.formControl}
+                        value={selectedDocenteId}
+                        onChangeText={setSelectedDocenteId}
+                      />
+                    </View>
+                  )}
+                  {/* Add date pickers for pickup and return */}
+                </View>
+                <View style={styles.modalFooterCustom}>
+                  <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowRequestModal(false)}>
+                    <Text style={styles.btnSecondaryText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnCreateVale} onPress={handleSubmitRequest} disabled={isSubmittingRequest}>
+                    <Text style={styles.btnText}>{isSubmittingRequest ? 'Enviando...' : 'Confirmar'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </Modal>
 
-        {/* Similarly implement other modals: showMassAdjustModal, showRequestModal, showAdjustModal, showDetailModal */}
-        {/* For date pickers in modals, use DateTimePicker */}
-        {/* Example for pickupDate in showRequestModal: */}
-        {/* <TouchableOpacity onPress={() => setShowDatePicker({ ...showDatePicker, pickup: true })}> */}
-        {/*   <Text>Select Date</Text> */}
-        {/* </TouchableOpacity> */}
-        {/* {showDatePicker.pickup && ( */}
-        {/*   <DateTimePicker */}
-        {/*     value={tempDate} */}
-        {/*     mode="date" */}
-        {/*     display={Platform.OS === 'ios' ? 'spinner' : 'default'} */}
-        {/*     onChange={(event, selected) => { */}
-        {/*       setShowDatePicker({ ...showDatePicker, pickup: Platform.OS === 'ios' }); */}
-        {/*       if (selected) setPickupDate(getFormattedDate(selected)); */}
-        {/*     }} */}
-        {/*   /> */}
-        {/* )} */}
-        {/* Repeat for returnDate */}
+          <Modal visible={showAdjustModal} animationType="fade" transparent={true} onRequestClose={() => setShowAdjustModal(false)}>
+            <View style={styles.modalOverlay}>
+              <ScrollView contentContainerStyle={styles.modalContentCustom}>
+                <View style={styles.modalHeaderCustom}>
+                  <Text style={styles.modalTitle}>Ajustar Inventario: {formatName(materialToAdjust?.nombre || '')}</Text>
+                  <TouchableOpacity onPress={() => setShowAdjustModal(false)}>
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalBody}>
+                  {error && <Text style={styles.alertCustom}>{error}</Text>}
+                  {!canModifyStock() && (
+                    <Text style={styles.alertCustom}>
+                      ⚠️ No tienes permisos para modificar el stock. Esta funcionalidad está restringida.
+                    </Text>
+                  )}
+                  <Text style={styles.formLabel}>
+                    Stock actual: {materialToAdjust?.cantidad} {getUnidad(materialToAdjust?.tipo || '')}
+                  </Text>
+                  <TextInput
+                    style={styles.formControl}
+                    value={adjustAmount}
+                    onChangeText={setAdjustAmount}
+                    placeholder="Añade o quita stock"
+                    keyboardType="number-pad"
+                    editable={canModifyStock()}
+                  />
+                </View>
+                <View style={styles.modalFooterCustom}>
+                  <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowAdjustModal(false)}>
+                    <Text style={styles.btnSecondaryText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnCreateVale} onPress={handleAdjustSubmit}>
+                    <Text style={styles.btnText}>Guardar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnDanger} onPress={handleDeleteMaterial}>
+                    <Text style={styles.btnText}>Eliminar</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </Modal>
 
-        {/* Ensure all modals are implemented with similar structure */}
-      </LinearGradient>
-    </SafeAreaView>
+          <Modal visible={showMassAdjustModal} animationType="fade" transparent={true} onRequestClose={() => setShowMassAdjustModal(false)}>
+            <View style={styles.modalOverlay}>
+              <ScrollView contentContainerStyle={styles.modalContentCustom}>
+                <View style={styles.modalHeaderCustom}>
+                  <Text style={styles.modalTitle}>Ajuste Masivo de Inventario</Text>
+                  <TouchableOpacity onPress={() => setShowMassAdjustModal(false)}>
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalBody}>
+                  {massError && <Text style={styles.alertCustom}>{massError}</Text>}
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Buscar..."
+                    value={massSearchTerm}
+                    onChangeText={setMassSearchTerm}
+                  />
+                  <FlatList
+                    data={allMaterials.filter((m) => formatName(m.nombre).toLowerCase().includes(massSearchTerm.toLowerCase()))}
+                    keyExtractor={(item) => `${item.tipo}-${item.id}`}
+                    renderItem={({ item }) => (
+                      <View style={styles.massAdjustItem}>
+                        <Text style={styles.fontRegular}>{formatName(item.nombre)}</Text>
+                        <TextInput
+                          style={styles.massInput}
+                          placeholder={getUnidad(item.tipo)}
+                          value={massAdjustments[`${item.id}-${item.tipo}`]?.cantidad?.toString() ?? ''}
+                          onChangeText={(value) => handleMassAdjustChange(item, value)}
+                          keyboardType="number-pad"
+                        />
+                      </View>
+                    )}
+                  />
+                  {Object.values(massAdjustments).length > 0 && (
+                    <View style={styles.massTags}>
+                      {Object.values(massAdjustments).map((a: any) => {
+                        const key = `${a.id}-${a.tipo}`;
+                        return (
+                          <View key={key} style={styles.ajusteTag}>
+                            <Text style={styles.fontRegular}>{`${formatName(a.nombre)} ${a.cantidad} ${getUnidad(a.tipo)}`}</Text>
+                            <TouchableOpacity style={styles.tagRemove} onPress={() => removeMassAdjustment(key)}>
+                              <Text>&times;</Text>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+                <View style={styles.modalFooterCustom}>
+                  <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowMassAdjustModal(false)}>
+                    <Text style={styles.btnSecondaryText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnCreateVale} onPress={handleMassAdjustSubmit} disabled={Object.values(massAdjustments).length === 0}>
+                    <Text style={styles.btnText}>Guardar</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </Modal>
+
+          <Modal visible={showAddModal} animationType="fade" transparent={true} onRequestClose={() => setShowAddModal(false)}>
+            <View style={styles.modalOverlay}>
+              <ScrollView contentContainerStyle={styles.modalContentCustom}>
+                <View style={styles.modalHeaderCustom}>
+                  <Text style={styles.modalTitle}>Agregar Material / Reactivo</Text>
+                  <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalBody}>
+                  {addError && <Text style={styles.alertCustom}>{addError}</Text>}
+                  <Text style={styles.formLabel}>¿Es Reactivo o Material? *</Text>
+                  <TextInput
+                    style={styles.formControl}
+                    value={newMaterial.tipoGeneral}
+                    onChangeText={(value) => setNewMaterial({ ...newMaterial, tipoGeneral: value, subTipo: '' })}
+                  />
+                  <Text style={styles.formLabel}>Categoría específica *</Text>
+                  <TextInput
+                    style={styles.formControl}
+                    value={newMaterial.subTipo}
+                    onChangeText={(value) => setNewMaterial({ ...newMaterial, subTipo: value })}
+                  />
+                  <Text style={styles.formLabel}>Nombre *</Text>
+                  <TextInput
+                    style={styles.formControl}
+                    value={newMaterial.nombre}
+                    onChangeText={(value) => setNewMaterial({ ...newMaterial, nombre: value })}
+                  />
+                  <Text style={styles.formLabel}>
+                    Cantidad inicial {newMaterial.subTipo === 'liquido' ? '(ml)' : newMaterial.subTipo === 'solido' ? '(g)' : '(unidades)'} *
+                  </Text>
+                  <TextInput
+                    style={styles.formControl}
+                    value={newMaterial.cantidad_inicial}
+                    onChangeText={(value) => setNewMaterial({ ...newMaterial, cantidad_inicial: value })}
+                    keyboardType="number-pad"
+                  />
+                  <Text style={styles.formLabel}>Estado *</Text>
+                  <TextInput
+                    style={styles.formControl}
+                    value={newMaterial.estado}
+                    onChangeText={(value) => setNewMaterial({ ...newMaterial, estado: value })}
+                  />
+                  <Text style={styles.formLabel}>Imagen (.jpg) *</Text>
+                  {/* Implement image picker here */}
+                  <Text style={styles.formLabel}>Descripción</Text>
+                  <TextInput
+                    style={styles.formControl}
+                    value={newMaterial.descripcion}
+                    onChangeText={(value) => setNewMaterial({ ...newMaterial, descripcion: value })}
+                    multiline
+                  />
+                  {newMaterial.tipoGeneral === 'Reactivo' && (
+                    <>
+                      <Text style={styles.formLabel}>Riesgos Físicos</Text>
+                      <TextInput
+                        style={styles.formControl}
+                        value={newMaterial.riesgos_fisicos}
+                        onChangeText={(value) => setNewMaterial({ ...newMaterial, riesgos_fisicos: value })}
+                        multiline
+                      />
+                      <Text style={styles.formLabel}>Riesgos Salud</Text>
+                      <TextInput
+                        style={styles.formControl}
+                        value={newMaterial.riesgos_salud}
+                        onChangeText={(value) => setNewMaterial({ ...newMaterial, riesgos_salud: value })}
+                        multiline
+                      />
+                      <Text style={styles.formLabel}>Riesgos Ambientales</Text>
+                      <TextInput
+                        style={styles.formControl}
+                        value={newMaterial.riesgos_ambientales}
+                        onChangeText={(value) => setNewMaterial({ ...newMaterial, riesgos_ambientales: value })}
+                        multiline
+                      />
+                    </>
+                  )}
+                </View>
+                <View style={styles.modalFooterCustom}>
+                  <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowAddModal(false)}>
+                    <Text style={styles.btnSecondaryText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnCreateVale} onPress={handleAddSubmit}>
+                    <Text style={styles.btnText}>Crear</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </Modal>
+        </LinearGradient>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -1102,13 +1443,24 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  requestItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 8,
+  },
   container: {
     flex: 1,
-    paddingHorizontal: width > 768 ? 24 : 16,
+    paddingHorizontal: 16,
   },
   headerSection: {
     padding: 16,
-    flexDirection: width > 768 ? 'row' : 'column',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -1130,7 +1482,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-   btnSecondaryText: {
+  btnSecondaryText: {
     color: '#003579',
     fontWeight: '600',
   },
@@ -1207,7 +1559,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   searchFilterContainer: {
-    flexDirection: width > 768 ? 'row' : 'column',
+    flexDirection: 'column',
     gap: 8,
     padding: 16,
     backgroundColor: '#f8fafc',
@@ -1248,66 +1600,225 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f1f5f9',
     margin: 8,
+    elevation: 2,
   },
   materialCardClickable: {
-    // Add hover-like if needed, but in RN use active opacity
+    // In RN, use activeOpacity on TouchableOpacity
   },
   materialCardNonClickable: {
     opacity: 0.85,
   },
   materialImage: {
     width: '100%',
-    height: 140,
+    height: (width - 32 - 16) / 3 * 0.8, // Keep aspect for full image view
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   materialCardContent: {
-    padding: 16,
+    padding: 8,
   },
   materialCardName: {
     fontWeight: '600',
     color: '#1f2937',
-    fontSize: 14,
-    marginBottom: 8,
+    fontSize: 12,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   materialCardType: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
     borderRadius: 4,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '500',
-    marginBottom: 4,
+    marginBottom: 2,
+    alignSelf: 'center',
   },
   materialCardStock: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '500',
+    textAlign: 'center',
   },
-  cartToggle: {
+  floatingCart: {
     position: 'absolute',
-    bottom: 16,
-    right: 16,
+    backgroundColor: '#003579',
+    borderRadius: 30,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1001,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#ef4444',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  cartBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 16,
+  },
+  modalContentCustom: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    width: '90%',
+    maxWidth: 600,
+    maxHeight: '90%',
+    padding: 16,
+  },
+  modalHeaderCustom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  modalBody: {
+    padding: 16,
+  },
+  modalFooterCustom: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'flex-end',
+    padding: 16,
+  },
+  alertCustom: {
+    backgroundColor: '#fee2e2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 12,
+    color: '#dc2626',
+    fontSize: 14,
+  },
+  formLabel: {
+    color: '#374151',
+    fontWeight: '600',
+    marginBottom: 8,
+    fontSize: 14,
+  },
+  formControl: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+    padding: 12,
+    fontSize: 14,
+    backgroundColor: '#fff',
+    marginBottom: 16,
+  },
+  detailImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  textMuted: {
+    color: '#00509e',
+    fontSize: 14,
+  },
+  modalBodyH5: {
+    color: '#1f2937',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  riesgosContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  riesgoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    margin: 4,
+  },
+  noRisks: {
+    color: '#00509e',
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  requestForm: {
+    marginTop: 16,
+  },
+  quantityInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    padding: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    width: 80,
+    marginBottom: 12,
+  },
+  btnAddToCart: {
     backgroundColor: '#003579',
     padding: 12,
     borderRadius: 6,
-    zIndex: 1001,
+    alignItems: 'center',
   },
-  cartToggleText: {
-    color: '#fff',
-    fontWeight: '600',
+  btnSecondaryCustom: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    padding: 12,
+    borderRadius: 6,
+    alignItems: 'center',
   },
-  cartOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
+  btnCreateVale: {
+    backgroundColor: '#003579',
+    padding: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  btnClear: {
+    backgroundColor: '#f59e0b',
+    padding: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  btnDanger: {
+    backgroundColor: '#ef4444',
+    padding: 12,
+    borderRadius: 6,
+    alignItems: 'center',
   },
   cartContainer: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    height: '80%',
+    borderRadius: 12,
+    width: '90%',
+    maxHeight: '80%',
   },
   cartHeader: {
     padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   cartHeaderTitle: {
     fontSize: 18,
@@ -1356,68 +1867,98 @@ const styles = StyleSheet.create({
   cartFooter: {
     padding: 16,
     gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
   },
-  btnCreateVale: {
-    backgroundColor: '#003579',
-    padding: 12,
-    borderRadius: 6,
+  emptyCart: {
     alignItems: 'center',
+    paddingVertical: 24,
   },
-  btnClear: {
-    backgroundColor: '#fff',
+  emptyCartIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+    opacity: 0.4,
+  },
+  emptyCartText: {
+    fontWeight: '600',
+    color: '#003579',
+    marginBottom: 4,
+    fontSize: 14,
+  },
+  emptyCartSmall: {
+    color: '#9ca3af',
+    fontSize: 12,
+  },
+  infoAlert: {
+    backgroundColor: '#eff6ff',
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    padding: 12,
+    borderColor: '#bfdbfe',
     borderRadius: 6,
-    alignItems: 'center',
+    padding: 12,
+    color: '#1e40af',
+    fontSize: 14,
+    marginBottom: 12,
   },
-    btnSecondaryCustom: {
-    backgroundColor: '#fff',
+  securityAlert: {
+    backgroundColor: '#fef7cd',
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    padding: 12,
+    borderColor: '#fbbf24',
     borderRadius: 6,
-    alignItems: 'center',
+    padding: 12,
+    color: '#92400e',
+    fontSize: 14,
+    marginBottom: 12,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 16,
-  },
-  modalContentCustom: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    width: '90%',
-    maxWidth: width > 768 ? 600 : width - 32,
-    maxHeight: '90%',
-  },
-  modalHeaderCustom: {
-    padding: 16,
+  massAdjustItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 8,
   },
-  modalTitle: {
-    fontSize: 20,
+  massInput: {
+    width: 80,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    padding: 8,
+    fontSize: 14,
+  },
+  massTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  ajusteTag: {
+    backgroundColor: '#e0f2fe',
+    padding: 8,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  tagRemove: {
+    padding: 4,
+  },
+  fontRegular: {
+    fontSize: 14,
+    color: '#1f2937',
+  },
+  fontSemibold: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  fontBold: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#1f2937',
   },
-  modalBody: {
-    padding: 16,
-  },
-  modalFooterCustom: {
-    padding: 16,
-    flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'flex-end',
-  },
-  // Add more styles for modals as needed
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1485,35 +2026,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  emptyCart: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    color: '#00509e',
-  },
-  emptyCartIcon: {
-    fontSize: 40,
-    marginBottom: 12,
-    opacity: 0.4,
-  },
-  emptyCartText: {
-    fontWeight: '600',
-    color: '#003579',
-    marginBottom: 4,
-    fontSize: 14,
-  },
-  emptyCartSmall: {
-    color: '#9ca3af',
-    fontSize: 12,
-  },
-  alertCustom: {
-    backgroundColor: '#fee2e2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 12,
-    color: '#dc2626',
-    fontSize: 14,
-  },
-  // ... Add remaining styles adapted from CSS, using RN equivalents for shadows, transitions (use Animated if needed), etc.
 });
