@@ -1060,14 +1060,16 @@ import * as ImagePicker from 'expo-image-picker';
                         ))}
                         </View>
                     )}
-                    <TextInput
+                   <View style={styles.searchContainer}>
+  <TextInput
     style={styles.searchInput}
     placeholder="Buscar materiales..."
     value={searchTerm}
     onChangeText={setSearchTerm}
     returnKeyType="done"
     onSubmitEditing={Keyboard.dismiss}
-    />
+  />
+</View>
     {error && <Text style={styles.alertCustom}>{error}</Text>}
 
                     </>
@@ -1746,16 +1748,25 @@ import * as ImagePicker from 'expo-image-picker';
         borderBottomColor: '#e5e7eb',
         width: '100%',
     },
-   searchInput: {
+ searchInput: {
   borderWidth: 1,
   borderColor: '#d1d5db',
   borderRadius: 999,     // Bordes redondeados
   padding: 12,
   fontSize: 14,
   backgroundColor: '#fff',
-  width: '100%',         // ⬅️ full width
-  alignSelf: 'stretch',  // ⬅️ asegura que estire dentro del contenedor
+  width: '100%', // ⬅️ 80% del ancho de pantalla (ajusta este valor)
+  alignSelf: 'center',   // ⬅️ Centrado horizontalmente
   marginVertical: 12,
+  maxWidth: 500,         // ⬅️ Límite máximo
+  minWidth: 250,         // ⬅️ Límite mínimo
+  textAlign: 'center',   // ⬅️ TEXTO CENTRADO
+},
+searchContainer: {
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  alignItems: 'center',    // Centra el input
+  width: '100%',
 },
     filterSelect: {
         borderWidth: 1,
