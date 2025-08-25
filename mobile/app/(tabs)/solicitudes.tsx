@@ -21,7 +21,9 @@ import jsPDF from 'jspdf';
 // @ts-ignore
 import autoTable from 'jspdf-autotable';
 import * as FileSystem from 'expo-file-system';
+// eslint-disable-next-line import/no-unresolved
 import * as Sharing from 'expo-sharing';
+// eslint-disable-next-line import/no-unresolved
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,8 +34,9 @@ const windowDimensions = Dimensions.get('window');
 
 const encabezadoUT = require('../../assets/universidad.jpg'); // Asume que la imagen está en assets
 
-function getUnidad(tipo: any) {
-  return { liquido: 'ml', solido: 'g' }[tipo] || 'u';
+function getUnidad(tipo: string): string {
+  const unidades: Record<string, string> = { liquido: 'ml', solido: 'g' };
+  return unidades[tipo] ?? 'u';
 }
 
 function toLocalDateStr(date: any) {
@@ -95,7 +98,7 @@ export default function SolicitudesScreen() {
   const [activeTab, setActiveTab] = useState('alumnos');
   const [search, setSearch] = useState('');
   const [modalEntrega, setModalEntrega] = useState<any>(null);
-  const [selectedItems, setSelectedItems] = useState<any[]>([]);
+   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   useEffect(() => {
     if (!notice) return;
@@ -272,7 +275,10 @@ export default function SolicitudesScreen() {
         tipo: item.tipo,
       });
     }
-    return Object.values(by).sort((a: any, b: any) => new Date(b.fecha_solicitud) - new Date(a.fecha_solicitud));
+    return Object.values(by).sort(
+      (a: any, b: any) =>
+        new Date(b.fecha_solicitud).getTime() - new Date(a.fecha_solicitud).getTime()
+    );
   }
 
   function mapEstadoPorRol(estadoSQL: any, isDocenteReq: any, rolVista: any) {
@@ -425,6 +431,12 @@ export default function SolicitudesScreen() {
     setSelectedItems([]);
   };
 
+    const toggleItem = (id: string) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
   const seleccionarTodos = () => {
     if (!modalEntrega) return;
     setSelectedItems(modalEntrega.items.map((i: any) => i.item_id));
@@ -467,8 +479,8 @@ export default function SolicitudesScreen() {
 
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 15;
-      const primary = [0, 0, 0];
-      const secondary = [100, 100, 100];
+      const primary: [number, number, number] = [0, 0, 0];
+      const secondary: [number, number, number] = [100, 100, 100];
 
       const maxHeaderWidth = (pageWidth - margin * 2) * 0.4;
       const maxHeaderHeight = 40;
@@ -523,7 +535,7 @@ export default function SolicitudesScreen() {
         tableWidth: pageWidth - margin * 2,
       });
 
-      const startYTable = doc.lastAutoTable.finalY;
+       const startYTable = (doc as any).lastAutoTable.finalY;
       const items = vale.items || [];
       const rows = [];
       for (let i = 0; i < 10; i++) {
@@ -554,7 +566,7 @@ export default function SolicitudesScreen() {
         tableWidth: pageWidth - margin * 2,
       });
 
-      const afterTableY = doc.lastAutoTable.finalY + 4;
+    const afterTableY = (doc as any).lastAutoTable.finalY + 4;
       const profesor = vale.profesor || '';
 
       doc.setFontSize(10);
