@@ -18,27 +18,30 @@ import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import jsPDF from 'jspdf';
+// @ts-ignore
 import autoTable from 'jspdf-autotable';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Asset } from 'expo-asset';
+import { API_URL } from '@/constants/api'; // Assuming this exists as in the first code
 
 const windowDimensions = Dimensions.get('window');
 
 const encabezadoUT = require('../../assets/universidad.jpg'); // Asume que la imagen está en assets
 
-function getUnidad(tipo) {
+function getUnidad(tipo: any) {
   return { liquido: 'ml', solido: 'g' }[tipo] || 'u';
 }
 
-function toLocalDateStr(date) {
+function toLocalDateStr(date: any) {
   const offset = date.getTimezoneOffset();
   return new Date(date.getTime() - offset * 60000).toISOString().split('T')[0];
 }
 
-function formatFechaStr(fecha) {
+function formatFechaStr(fecha: any) {
   if (!fecha) return '';
   try {
     const datePart = String(fecha).split('T')[0];
@@ -49,7 +52,7 @@ function formatFechaStr(fecha) {
   }
 }
 
-const EstadoBadge = ({ estado }) => {
+const EstadoBadge = ({ estado }: { estado: any }) => {
   const config = {
     'aprobación pendiente': { bg: '#FEF3C7', text: '#D97706', icon: '⏳' },
     'aprobacion pendiente': { bg: '#FEF3C7', text: '#D97706', icon: '⏳' },
@@ -63,7 +66,7 @@ const EstadoBadge = ({ estado }) => {
     'pendiente': { bg: '#FEF9C3', text: '#854D0E', icon: '⏳' },
   };
   const safe = (estado || '').toLowerCase().trim();
-  const { bg, text, icon } = config[safe] || config.pendiente;
+  const { bg, text, icon } = config[safe as keyof typeof config] || config.pendiente;
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
       <Text style={{ color: text }}>{icon} {estado}</Text>
@@ -77,12 +80,12 @@ export default function SolicitudesScreen() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [grupos, setGrupos] = useState({});
-  const [alumnoData, setAlumnoData] = useState([]);
-  const [docAprobar, setDocAprobar] = useState([]);
-  const [docMias, setDocMias] = useState([]);
-  const [almAlumnos, setAlmAlumnos] = useState([]);
-  const [almDocentes, setAlmDocentes] = useState([]);
+  const [grupos, setGrupos] = useState<any>({});
+  const [alumnoData, setAlumnoData] = useState<any[]>([]);
+  const [docAprobar, setDocAprobar] = useState<any[]>([]);
+  const [docMias, setDocMias] = useState<any[]>([]);
+  const [almAlumnos, setAlmAlumnos] = useState<any[]>([]);
+  const [almDocentes, setAlmDocentes] = useState<any[]>([]);
   const [procesando, setProcesando] = useState(null);
   const [filterDate, setFilterDate] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -91,8 +94,8 @@ export default function SolicitudesScreen() {
   const [notice, setNotice] = useState('');
   const [activeTab, setActiveTab] = useState('alumnos');
   const [search, setSearch] = useState('');
-  const [modalEntrega, setModalEntrega] = useState(null);
-  const [selectedItems, setSelectedItems] = useState([]);
+  const [modalEntrega, setModalEntrega] = useState<any>(null);
+  const [selectedItems, setSelectedItems] = useState<any[]>([]);
 
   useEffect(() => {
     if (!notice) return;
@@ -136,21 +139,21 @@ export default function SolicitudesScreen() {
           setLoading(true);
 
           try {
-            const g = await axios.get(`${API_URL}/api/grupos`, { // Assume API_URL from constants
+            const g = await axios.get(`${API_URL}/api/grupos`, {
               headers: { Authorization: `Bearer ${token}` },
             });
-            const map = g.data.reduce((acc, it) => {
+            const map = g.data.reduce((acc: any, it: any) => {
               acc[it.id] = it.nombre;
               return acc;
             }, {});
             setGrupos(map);
           } catch (_) {}
 
-          let alumnoArr = [];
-          let docAprobarArr = [];
-          let docMiasArr = [];
-          let almAlumnosArr = [];
-          let almDocentesArr = [];
+          let alumnoArr: any[] = [];
+          let docAprobarArr: any[] = [];
+          let docMiasArr: any[] = [];
+          let almAlumnosArr: any[] = [];
+          let almDocentesArr: any[] = [];
 
           if (usuario.rol === 'alumno') {
             const { data } = await axios.get(`${API_URL}/api/materials/usuario/solicitudes`, {
@@ -180,8 +183,8 @@ export default function SolicitudesScreen() {
               headers: { Authorization: `Bearer ${token}` },
             });
             const grouped = agrupar(data, 'almacen', grupos);
-            almAlumnosArr = grouped.filter((s) => !s.isDocenteRequest);
-            almDocentesArr = grouped.filter((s) => s.isDocenteRequest);
+            almAlumnosArr = grouped.filter((s: any) => !s.isDocenteRequest);
+            almDocentesArr = grouped.filter((s: any) => s.isDocenteRequest);
             setAlmAlumnos(almAlumnosArr);
             setAlmDocentes(almDocentesArr);
           }
@@ -191,13 +194,13 @@ export default function SolicitudesScreen() {
           manana.setDate(manana.getDate() + 1);
           const mananaStr = toLocalDateStr(manana);
 
-          let all = [];
+          let all: any[] = [];
           if (usuario.rol === 'alumno') all = alumnoArr;
           if (usuario.rol === 'docente') all = [...docAprobarArr, ...docMiasArr];
           if (usuario.rol === 'almacen') all = [...almAlumnosArr, ...almDocentesArr];
-          const pendientes = all.filter((s) => s.estado === 'entrega pendiente');
-          const hoyCount = pendientes.filter((s) => (s.fecha_recoleccion || '').split('T')[0] === todayStr).length;
-          const mananaCount = pendientes.filter((s) => (s.fecha_recoleccion || '').split('T')[0] === mananaStr).length;
+          const pendientes = all.filter((s: any) => s.estado === 'entrega pendiente');
+          const hoyCount = pendientes.filter((s: any) => (s.fecha_recoleccion || '').split('T')[0] === todayStr).length;
+          const mananaCount = pendientes.filter((s: any) => (s.fecha_recoleccion || '').split('T')[0] === mananaStr).length;
           if (usuario.rol === 'almacen' && pendientes.length > 0) {
             let msg = '';
             if (hoyCount > 0 && mananaCount > 0) {
@@ -213,9 +216,6 @@ export default function SolicitudesScreen() {
           }
 
           setError('');
-        } catch (err) {
-          console.error(err);
-          setError(err.response?.data?.error || 'Error al cargar solicitudes');
         } finally {
           setLoading(false);
         }
@@ -226,8 +226,8 @@ export default function SolicitudesScreen() {
     initialize();
   }, [authLoading, usuario]);
 
-  function agrupar(rows, rolVista, gruposMap) {
-    const by = {};
+  function agrupar(rows: any, rolVista: any, gruposMap: any) {
+    const by: any = {};
     for (const item of rows) {
       const key = item.solicitud_id ?? item.id;
       if (!key) continue;
@@ -272,10 +272,10 @@ export default function SolicitudesScreen() {
         tipo: item.tipo,
       });
     }
-    return Object.values(by).sort((a, b) => new Date(b.fecha_solicitud) - new Date(a.fecha_solicitud));
+    return Object.values(by).sort((a: any, b: any) => new Date(b.fecha_solicitud) - new Date(a.fecha_solicitud));
   }
 
-  function mapEstadoPorRol(estadoSQL, isDocenteReq, rolVista) {
+  function mapEstadoPorRol(estadoSQL: any, isDocenteReq: any, rolVista: any) {
     const e = (estadoSQL || '').toLowerCase().trim();
 
     if (rolVista === 'almacen') {
@@ -304,7 +304,7 @@ export default function SolicitudesScreen() {
     }
   }
 
-  const actualizarEstado = async (id, accion, nuevoEstadoUI, items = []) => {
+  const actualizarEstado = async (id: any, accion: any, nuevoEstadoUI: any, items: any[] = []) => {
     if (procesando) return;
     setProcesando(id);
     const token = await SecureStore.getItemAsync('token');
@@ -315,9 +315,9 @@ export default function SolicitudesScreen() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const apply = (arrSetter) =>
-        arrSetter((prev) =>
-          prev.map((s) => {
+      const apply = (arrSetter: any) =>
+        arrSetter((prev: any[]) =>
+          prev.map((s: any) => {
             if (s.id !== id) return s;
             const ui = nuevoEstadoUI;
             const raw = uiToRaw(ui);
@@ -325,8 +325,8 @@ export default function SolicitudesScreen() {
             if (accion === 'entregar') {
               const idsEntregados = items.map((i) => i.item_id);
               updated.items = (s.items || [])
-                .filter((it) => idsEntregados.includes(it.item_id))
-                .map((it) => {
+                .filter((it: any) => idsEntregados.includes(it.item_id))
+                .map((it: any) => {
                   const entregado = items.find((i) => i.item_id === it.item_id);
                   return {
                     ...it,
@@ -338,7 +338,7 @@ export default function SolicitudesScreen() {
           })
         );
 
-      const drop = (arrSetter) => arrSetter((prev) => prev.filter((s) => s.id !== id));
+      const drop = (arrSetter: any) => arrSetter((prev: any[]) => prev.filter((s: any) => s.id !== id));
 
       if (accion === 'cancelar' || accion === 'rechazar') {
         drop(setAlumnoData);
@@ -353,7 +353,7 @@ export default function SolicitudesScreen() {
         apply(setAlmAlumnos);
         apply(setAlmDocentes);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.error || `Error al ${accion} la solicitud`);
     } finally {
@@ -361,7 +361,7 @@ export default function SolicitudesScreen() {
     }
   };
 
-  function uiToRaw(estadoUI) {
+  function uiToRaw(estadoUI: any) {
     const e = (estadoUI || '').toLowerCase().trim();
     if (e === 'entrega pendiente') return 'aprobada';
     if (e === 'aprobación pendiente' || e === 'aprobacion pendiente') return 'pendiente';
@@ -372,14 +372,14 @@ export default function SolicitudesScreen() {
     return e;
   }
 
-  const filterByDate = (arr) =>
-    filterDate ? arr.filter((s) => (s.fecha_recoleccion || '').split('T')[0] === filterDate) : arr;
+  const filterByDate = (arr: any[]) =>
+    filterDate ? arr.filter((s: any) => (s.fecha_recoleccion || '').split('T')[0] === filterDate) : arr;
 
-  const applySearch = (arr, includeGrupo = false) => {
+  const applySearch = (arr: any[], includeGrupo = false) => {
     const term = search.toLowerCase();
     if (!term) return arr;
     return arr.filter(
-      (s) =>
+      (s: any) =>
         s.folio.toLowerCase().includes(term) ||
         (s.nombre_alumno || '').toLowerCase().includes(term) ||
         (s.profesor || '').toLowerCase().includes(term) ||
@@ -387,7 +387,7 @@ export default function SolicitudesScreen() {
     );
   };
 
-  let dataToShow = [];
+  let dataToShow: any[] = [];
   let showButtons = false;
   let showSearch = false;
   let showDateFilter = false;
@@ -408,7 +408,7 @@ export default function SolicitudesScreen() {
     dataToShow = applySearch(filtered, activeTab === 'alumnos');
   }
 
-  const onDateChange = (event, selectedDate) => {
+  const onDateChange = (event: any, selectedDate: any) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       const v = toLocalDateStr(selectedDate);
@@ -420,32 +420,26 @@ export default function SolicitudesScreen() {
     }
   };
 
-  const abrirEntrega = (sol) => {
+  const abrirEntrega = (sol: any) => {
     setModalEntrega(sol);
     setSelectedItems([]);
   };
 
-  const toggleItem = (id) => {
-    setSelectedItems((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
   const seleccionarTodos = () => {
     if (!modalEntrega) return;
-    setSelectedItems(modalEntrega.items.map((i) => i.item_id));
+    setSelectedItems(modalEntrega.items.map((i: any) => i.item_id));
   };
 
   const confirmarEntrega = async () => {
     if (!modalEntrega) return;
     const items = modalEntrega.items
-      .filter((i) => selectedItems.includes(i.item_id))
-      .map((i) => ({ item_id: i.item_id, cantidad_entregada: i.cantidad }));
+      .filter((i: any) => selectedItems.includes(i.item_id))
+      .map((i: any) => ({ item_id: i.item_id, cantidad_entregada: i.cantidad }));
     await actualizarEstado(modalEntrega.id, 'entregar', 'entregada', items);
     setModalEntrega(null);
   };
 
-  const descargarPDF = async (vale) => {
+  const descargarPDF = async (vale: any) => {
     try {
       const token = await SecureStore.getItemAsync('token');
       if (token && vale?.id) {
@@ -465,12 +459,11 @@ export default function SolicitudesScreen() {
         format: 'a4',
       });
 
-      const toBase64 = async (asset) => {
-        const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
-        return `data:image/jpg;base64,${base64}`;
-      };
-
-      const encabezadoImg = await toBase64(encabezadoUT);
+      const asset = Asset.fromModule(encabezadoUT);
+      await asset.downloadAsync();
+      const localUri = asset.localUri || '';
+      const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: FileSystem.EncodingType.Base64 });
+      const encabezadoImg = `data:image/jpg;base64,${base64}`;
 
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 15;
@@ -530,7 +523,7 @@ export default function SolicitudesScreen() {
         tableWidth: pageWidth - margin * 2,
       });
 
-      const startY = doc.lastAutoTable.finalY;
+      const startYTable = doc.lastAutoTable.finalY;
       const items = vale.items || [];
       const rows = [];
       for (let i = 0; i < 10; i++) {
@@ -545,7 +538,7 @@ export default function SolicitudesScreen() {
       }
 
       autoTable(doc, {
-        startY,
+        startY: startYTable,
         theme: 'grid',
         head: [['Cantidad', 'Descripción', 'Cantidad', 'Descripción']],
         body: rows,
@@ -602,13 +595,13 @@ export default function SolicitudesScreen() {
       const uri = `${FileSystem.documentDirectory}${vale.folio}.pdf`;
       await FileSystem.writeAsStringAsync(uri, pdfBase64, { encoding: FileSystem.EncodingType.Base64 });
       await Sharing.shareAsync(uri);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al generar PDF:', err);
       Alert.alert('Error', 'No se pudo generar el PDF');
     }
   };
 
-  const renderCard = ({ item: s }) => {
+  const renderCard = ({ item: s }: { item: any }) => {
     const createDateStr = (s.fecha_solicitud || '').split('T')[0];
     const recoDateStr = (s.fecha_recoleccion || '').split('T')[0];
     const dateStr = usuario?.rol === 'almacen' ? recoDateStr : createDateStr;
@@ -645,14 +638,13 @@ export default function SolicitudesScreen() {
         )}
         <Text style={styles.cardSubtitle}>Materiales:</Text>
         <ScrollView style={styles.materialsList} nestedScrollEnabled>
-          {s.items.map((m) => (
+          {s.items.map((m: any) => (
             <View key={m.item_id} style={styles.materialItem}>
               <Text>{m.cantidad} {getUnidad(m.tipo)} - {m.nombre_material}</Text>
             </View>
           ))}
         </ScrollView>
         <View style={styles.actions}>
-          {/* Actions based on role */}
           {usuario?.rol === 'docente' &&
             !s.isDocenteRequest &&
             s.estado === 'aprobación pendiente' && (
@@ -730,15 +722,13 @@ export default function SolicitudesScreen() {
             style={[styles.tabButton, activeTab === 'alumnos' && styles.activeTab]}
             onPress={() => setActiveTab('alumnos')}
           >
-            <Text style={styles.tabText}>Solicitudes de Alumnos</Text>
+            <Text style={[styles.tabText, activeTab === 'alumnos' && { color: '#fff' }]}>Solicitudes de Alumnos</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'docentes' && styles.activeTab]}
             onPress={() => setActiveTab('docentes')}
           >
-            <Text style={styles.tabText}>
-              {usuario?.rol === 'docente' ? 'Mis Solicitudes' : 'Solicitudes de Docentes'}
-            </Text>
+            <Text style={[styles.tabText, activeTab === 'docentes' && { color: '#fff' }]}>Solicitudes de Docentes</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -781,7 +771,7 @@ export default function SolicitudesScreen() {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Entregar materiales</Text>
               <ScrollView>
-                {modalEntrega.items.map((item) => (
+                {modalEntrega.items.map((item: any) => (
                   <TouchableOpacity
                     key={item.item_id}
                     style={styles.checkboxItem}
@@ -847,7 +837,6 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     backgroundColor: '#003579',
-    color: '#fff',
   },
   tabText: {
     color: '#000',
