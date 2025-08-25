@@ -17,11 +17,8 @@
     Keyboard,
 } from 'react-native';
 import axios from 'axios';
-import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
-// eslint-disable-next-line import/no-unresolved
-import { Picker } from '@react-native-picker/picker';
 // eslint-disable-next-line import/no-unresolved
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -1324,21 +1321,32 @@ import * as ImagePicker from 'expo-image-picker';
     {docentes.length === 0 ? (
   <Text style={{ marginBottom: 12, color: '#6b7280' }}>Cargando docentes…</Text>
 ) : (
-  <Picker
-    selectedValue={selectedDocenteId}
-    onValueChange={(itemValue: string) => setSelectedDocenteId(itemValue)}
-    // 👇 en iOS usa altura fija (rueda); en Android tu estilo actual
-    style={Platform.OS === 'ios' ? styles.iosPicker : styles.formControl}
+   <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    contentContainerStyle={styles.docenteList}
   >
-    <Picker.Item label="-- Selecciona un docente --" value="" />
     {docentes.map((doc: any) => (
-      <Picker.Item
+    <TouchableOpacity
         key={String(doc.id)}
-        label={formatName(doc.nombre)}
-        value={String(doc.id)}
-      />
+      style={[
+          styles.docenteOption,
+          selectedDocenteId === String(doc.id) && styles.docenteOptionSelected,
+        ]}
+        onPress={() => setSelectedDocenteId(String(doc.id))}
+      >
+        <Text
+          style={[
+            styles.docenteOptionText,
+            selectedDocenteId === String(doc.id) &&
+              styles.docenteOptionTextSelected,
+          ]}
+        >
+          {formatName(doc.nombre)}
+        </Text>
+      </TouchableOpacity>
     ))}
-  </Picker>
+   </ScrollView>
 )}
   </View>
 )}
@@ -1904,6 +1912,30 @@ import * as ImagePicker from 'expo-image-picker';
         fontSize: 14,
         backgroundColor: '#fff',
         marginBottom: 16,
+        },
+    docenteList: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    docenteOption: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 6,
+        backgroundColor: '#fff',
+        marginRight: 8,
+    },
+    docenteOptionSelected: {
+        backgroundColor: '#003579',
+        borderColor: '#003579',
+    },
+    docenteOptionText: {
+        color: '#374151',
+        fontSize: 14,
+    },
+    docenteOptionTextSelected: {
+        color: '#fff',
     },
      selectedImageName: {
         marginTop: 8,
@@ -2036,14 +2068,6 @@ import * as ImagePicker from 'expo-image-picker';
         color: '#1f2937',
         fontSize: 14,
     },
-    iosPicker: {
-  height: 216,             
-  backgroundColor: '#fff',
-  borderRadius: 6,
-  borderWidth: 1,
-  borderColor: '#d1d5db',
-  marginBottom: 16,
-},
     cartItemQuantity: {
         color: '#00509e',
         fontSize: 12,
