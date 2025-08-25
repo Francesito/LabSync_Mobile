@@ -775,7 +775,12 @@ export default function SolicitudesScreen() {
         data={dataToShow}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderCard}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={
+          dataToShow.length ? styles.list : [styles.list, styles.emptyContainer]
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No hay solicitudes para mostrar</Text>
+        }
       />
       {modalEntrega && (
         <Modal visible={!!modalEntrega} animationType="slide" transparent>
@@ -878,6 +883,15 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingBottom: 16,
+  },
+   emptyContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#6b7280',
+    textAlign: 'center',
   },
   card: {
     backgroundColor: '#fff',
