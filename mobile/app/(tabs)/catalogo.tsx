@@ -11,20 +11,20 @@ import {
   ActivityIndicator,
   Dimensions,
   Alert,
-  Platform,
   Image,
 } from 'react-native';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
+// eslint-disable-next-line import/no-unresolved
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { router, useRouter } from 'expo-router';
 import { API_URL } from '@/constants/api';
 // Assuming useAuth is adapted for React Native; if not, use context or similar
-import { useAuth } from '@/lib/auth'; // Adapt this import as needed
+import { useAuth } from '../../lib/auth'; // Adapt this import as needed
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 function toLocalDateStr(date: Date): string {
   const offset = date.getTimezoneOffset();
@@ -32,6 +32,7 @@ function toLocalDateStr(date: Date): string {
 }
 
 export default function CatalogoScreen() {
+     const router = useRouter();
   const { usuario } = useAuth();
   const [allMaterials, setAllMaterials] = useState<any[]>([]);
   const [selectedCart, setSelectedCart] = useState<any[]>([]);
@@ -81,8 +82,6 @@ export default function CatalogoScreen() {
   const [permissionsLoading, setPermissionsLoading] = useState(true);
   const [permissionsError, setPermissionsError] = useState('');
   const [showCart, setShowCart] = useState(width > 768); // Show cart by default on larger screens
-  const [showDatePicker, setShowDatePicker] = useState({ pickup: false, return: false });
-  const [tempDate, setTempDate] = useState(new Date());
 
   const LOW_STOCK_THRESHOLD = 50;
   const CLOUDINARY_CLOUD_NAME = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || 'tu-cloud-name';
@@ -179,7 +178,7 @@ export default function CatalogoScreen() {
       );
       setDocentes(response.data);
       if (userPermissions.rol === 'docente') {
-        setSelectedDocenteId(usuario.id.toString());
+         setSelectedDocenteId(usuario?.id ? usuario.id.toString() : '');
       } else {
         setSelectedDocenteId('');
       }
@@ -549,7 +548,8 @@ export default function CatalogoScreen() {
       return;
     }
 
-    let docenteIdToUse = userPermissions.rol === 'docente' ? usuario.id : parseInt(selectedDocenteId);
+    const docenteIdToUse =
+        userPermissions.rol === 'docente' ? usuario?.id : parseInt(selectedDocenteId, 10);
     if (userPermissions.rol !== 'docente' && !docenteIdToUse) {
       setError('Debes seleccionar un docente encargado.');
       return;
@@ -576,9 +576,9 @@ export default function CatalogoScreen() {
           fecha_solicitud: toLocalDateStr(new Date()),
           fecha_recoleccion: pickupDate,
           fecha_devolucion: returnDate,
-          aprobar_automatico: userPermissions.rol === 'docente',
-          docente_id: docenteIdToUse,
-          nombre_alumno: userPermissions.rol === 'alumno' ? formatName(usuario.nombre) : null,
+         aprobar_automatico: userPermissions.rol === 'docente',
+            docente_id: docenteIdToUse,
+            nombre_alumno: userPermissions.rol === 'alumno' ? formatName(usuario?.nombre ?? '') : null,
         },
       });
 
@@ -586,9 +586,9 @@ export default function CatalogoScreen() {
       setPickupDate('');
       setReturnDate('');
       setShowRequestModal(false);
-      setSelectedDocenteId(
-        userPermissions.rol === 'docente' ? usuario.id.toString() : ''
-      );
+       setSelectedDocenteId(
+          userPermissions.rol === 'docente' ? usuario?.id?.toString() || '' : ''
+        );
       router.replace('/solicitudes');
     } catch (err: any) {
       console.error('Error al enviar solicitud:', err);
@@ -932,6 +932,7 @@ export default function CatalogoScreen() {
               <TouchableOpacity
                 style={[
                   styles.materialCard,
+                    { width: width / numColumns - 16 },
                   (userPermissions.rol === 'almacen' && userPermissions.modificar_stock) || canViewDetails()
                     ? styles.materialCardClickable
                     : styles.materialCardNonClickable,
@@ -1047,7 +1048,7 @@ export default function CatalogoScreen() {
               </View>
               <View style={styles.modalFooterCustom}>
                 <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowAddModal(false)}>
-                  <Text style={styles.btnText}>Cancelar</Text>
+                <Text style={styles.btnSecondaryText}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.btnCreateVale} onPress={handleAddSubmit}>
                   <Text style={styles.btnText}>Crear</Text>
@@ -1127,6 +1128,10 @@ const styles = StyleSheet.create({
   },
   btnText: {
     color: '#fff',
+    fontWeight: '600',
+  },
+   btnSecondaryText: {
+    color: '#003579',
     fontWeight: '600',
   },
   headerTitle: {
@@ -1225,6 +1230,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     backgroundColor: '#fff',
   },
+  loadingSpinner: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 300,
+  },
   materialGrid: {
     padding: 16,
   },
@@ -1238,7 +1248,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f1f5f9',
     margin: 8,
-    width: width / numColumns - 16, // Responsive width
   },
   materialCardClickable: {
     // Add hover-like if needed, but in RN use active opacity
@@ -1355,6 +1364,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnClear: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    padding: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+    btnSecondaryCustom: {
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#d1d5db',
