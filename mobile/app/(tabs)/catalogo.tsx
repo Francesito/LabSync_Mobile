@@ -19,6 +19,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
+// eslint-disable-next-line import/no-unresolved
 import { Picker } from '@react-native-picker/picker';
 // eslint-disable-next-line import/no-unresolved
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,6 +28,7 @@ import { useRouter } from 'expo-router';
 import { API_URL } from '@/constants/api';
 import { useAuth } from '../../lib/auth';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+// eslint-disable-next-line import/no-unresolved
 import * as ImagePicker from 'expo-image-picker';
 
     const windowDimensions = Dimensions.get('window');
@@ -90,36 +92,54 @@ import * as ImagePicker from 'expo-image-picker';
     const initialCartPos = { x: screenWidth - 80, y: 20 };
     const cartPosition = useRef(new Animated.ValueXY(initialCartPos)).current;
     const [cartPos, setCartPos] = useState(initialCartPos);
+     const [mediaStatus, requestMediaPermission] = ImagePicker.useMediaLibraryPermissions();
     
      const pickImageFromGallery = async () => {
-        try {
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                quality: 1,
-            });
+  try {
 
-            if (!result.canceled && result.assets && result.assets.length > 0) {
-                const asset = result.assets[0];
-                const fileName = asset.fileName || asset.uri.split('/').pop() || '';
-                if (fileName.toUpperCase().endsWith('.JPG')) {
-                    setNewMaterial({
-                        ...newMaterial,
-                        imagenFile: {
-                            uri: asset.uri,
-                            type: 'image/jpeg',
-                            name: fileName,
-                        },
-                    });
-                } else {
-                    Alert.alert('Formato inválido', 'Selecciona una imagen con extensión .JPG');
-                }
-            }
-        } catch (err) {
-            console.error('Error al seleccionar imagen:', err);
-            Alert.alert('Error', 'No se pudo seleccionar la imagen');
-        }
-    };
+     if (!mediaStatus?.granted) {
+      const res = await requestMediaPermission();
+      if (!res.granted) {
+        Alert.alert('Permiso requerido', 'Necesito acceso a tu galería para seleccionar la imagen.');
+        return;
+      }
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // ← antes: [ImagePicker.MediaType.Images]
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+
+      // Acepta solo JPG/JPEG
+      const nameFromUri = asset.uri.split('/').pop() ?? '';
+      const fileName = asset.fileName ?? nameFromUri;
+      const isJPG =
+        /\.jpe?g$/i.test(fileName) ||
+        (asset as any).mimeType === 'image/jpeg';
+
+      if (isJPG) {
+        setNewMaterial({
+          ...newMaterial,
+          imagenFile: {
+            uri: asset.uri,
+            type: 'image/jpeg',
+            name: fileName || `image_${Date.now()}.jpg`,
+          },
+        });
+      } else {
+        Alert.alert('Formato inválido', 'Selecciona una imagen .JPG o .JPEG');
+      }
+    }
+  } catch (err) {
+    console.error('Error al seleccionar imagen:', err);
+    Alert.alert('Error', 'No se pudo seleccionar la imagen');
+  }
+};
+
 
     useEffect(() => {
         const id = cartPosition.addListener(({ x, y }) => setCartPos({ x, y }));
@@ -249,11 +269,7 @@ import * as ImagePicker from 'expo-image-picker';
 
     const loadDocentes = async () => {
         try {
-        const token = await SecureStore.getItemAsync('token');
-        const response = await axios.get(
-            `${API_URL}/api/auth/docentes`,
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+       const response = await makeSecureApiCall(`${API_URL}/api/materials/docentes`);
         setDocentes(response.data);
         if (userPermissions.rol === 'docente') {
             setSelectedDocenteId(usuario?.id ? usuario.id.toString() : '');
@@ -1297,11 +1313,11 @@ import * as ImagePicker from 'expo-image-picker';
                     {userPermissions.rol !== 'docente' && (
                         <View>
                         <Text style={styles.formLabel}>Selecciona el docente encargado *</Text>
-                          <Picker
-                        selectedValue={selectedDocenteId}
-                        onValueChange={(itemValue) => setSelectedDocenteId(itemValue)}
+                                                    <Picker
+                            selectedValue={selectedDocenteId}
+                            onValueChange={(itemValue: string) => setSelectedDocenteId(itemValue)}
                             style={styles.formControl}
-                              >
+                            >
                         <Picker.Item label="-- Selecciona un docente --" value="" />
                         {docentes.map((doc: any) => (
                           <Picker.Item
