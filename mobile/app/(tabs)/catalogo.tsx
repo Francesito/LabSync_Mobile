@@ -15,18 +15,19 @@
     Animated,
     PanResponder,
     Keyboard,
-    } from 'react-native';
-    import axios from 'axios';
-    import * as SecureStore from 'expo-secure-store';
-    import { Ionicons } from '@expo/vector-icons';
-    import { Picker } from '@react-native-picker/picker';
-    // eslint-disable-next-line import/no-unresolved
-    import { LinearGradient } from 'expo-linear-gradient';
-    import { SafeAreaView } from 'react-native-safe-area-context';
-    import { useRouter } from 'expo-router';
-    import { API_URL } from '@/constants/api';
-    import { useAuth } from '../../lib/auth';
-    import { GestureHandlerRootView } from 'react-native-gesture-handler';
+} from 'react-native';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
+import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+// eslint-disable-next-line import/no-unresolved
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { API_URL } from '@/constants/api';
+import { useAuth } from '../../lib/auth';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as ImagePicker from 'expo-image-picker';
 
     const windowDimensions = Dimensions.get('window');
 
@@ -90,6 +91,36 @@
     const cartPosition = useRef(new Animated.ValueXY(initialCartPos)).current;
     const [cartPos, setCartPos] = useState(initialCartPos);
     
+     const pickImageFromGallery = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 1,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const asset = result.assets[0];
+                const fileName = asset.fileName || asset.uri.split('/').pop() || '';
+                if (fileName.toUpperCase().endsWith('.JPG')) {
+                    setNewMaterial({
+                        ...newMaterial,
+                        imagenFile: {
+                            uri: asset.uri,
+                            type: 'image/jpeg',
+                            name: fileName,
+                        },
+                    });
+                } else {
+                    Alert.alert('Formato inválido', 'Selecciona una imagen con extensión .JPG');
+                }
+            }
+        } catch (err) {
+            console.error('Error al seleccionar imagen:', err);
+            Alert.alert('Error', 'No se pudo seleccionar la imagen');
+        }
+    };
+
     useEffect(() => {
         const id = cartPosition.addListener(({ x, y }) => setCartPos({ x, y }));
         return () => cartPosition.removeListener(id);
@@ -220,7 +251,7 @@
         try {
         const token = await SecureStore.getItemAsync('token');
         const response = await axios.get(
-            `${API_URL}/api/materials/docentes`,
+            `${API_URL}/api/auth/docentes`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
         setDocentes(response.data);
@@ -338,6 +369,18 @@
         Promise.all([fetchMaterials(), loadDocentes()]);
         }
     }, [userPermissions.rol]);
+
+     useEffect(() => {
+        if (showRequestModal) {
+            loadDocentes();
+        }
+    }, [showRequestModal]);
+
+     useEffect(() => {
+        if (showCartModal && docentes.length === 0) {
+        loadDocentes();
+        }
+    }, [showCartModal]);
 
     const fetchMaterials = async () => {
         try {
@@ -1173,26 +1216,38 @@
                             value={detailAmount}
                         onChangeText={handleDetailAmountChange}
                             placeholder="Ingresa cantidad"
-                        keyboardType="default"
+                        keyboardType="numeric"
                             returnKeyType="done"
                             onSubmitEditing={Keyboard.dismiss}
                             editable={selectedMaterial?.cantidad !== 0}
                         />
-                        <TouchableOpacity
-    style={[styles.btnAddToCart, { width: '100%' }]}
-    onPress={() => addToCart(selectedMaterial, detailAmount)}
-    disabled={
-        !detailAmount ||
-        parseInt(detailAmount) <= 0 ||
-        parseInt(detailAmount) > (selectedMaterial?.cantidad || 0) ||
-        selectedMaterial?.cantidad === 0 ||
-        !canMakeRequests()
-    }
-    >
-    <Text style={styles.btnText}>
-        {selectedMaterial?.cantidad === 0 ? 'Material Agotado' : 'Añadir al carrito'}
-    </Text>
-    </TouchableOpacity>
+                      {(() => {
+                            const maxCantidad = selectedMaterial?.cantidad || 0;
+                            const entered = parseInt(detailAmount || '0', 10);
+                            const isAddDisabled =
+                            !detailAmount ||
+                            entered <= 0 ||
+                            entered > maxCantidad ||
+                            maxCantidad === 0 ||
+                            !canMakeRequests();
+                            return (
+                            <TouchableOpacity
+                                style={[
+                                    styles.btnAddToCart,
+                                    { width: '100%' },
+                                    isAddDisabled && styles.btnDisabled,
+                                ]}
+                                onPress={() => addToCart(selectedMaterial, detailAmount)}
+                                disabled={isAddDisabled}
+                            >
+                                <Text style={styles.btnText}>
+                                {maxCantidad === 0
+                                    ? 'Material Agotado'
+                                    : 'Añadir al carrito'}
+                                </Text>
+                            </TouchableOpacity>
+                            );
+                        })()}
                         </View>
                     )}
                     </View>
@@ -1443,7 +1498,12 @@
                         onChangeText={(value) => setNewMaterial({ ...newMaterial, estado: value })}
                     />
                     <Text style={styles.formLabel}>Imagen (.jpg) *</Text>
-                    {/* Implement image picker here */}
+                  <TouchableOpacity style={styles.btnSecondaryCustom} onPress={pickImageFromGallery}>
+                        <Text style={styles.btnSecondaryText}>Seleccionar imagen</Text>
+                    </TouchableOpacity>
+                    {newMaterial.imagenFile && (
+                        <Text style={styles.selectedImageName}>{newMaterial.imagenFile.name}</Text>
+                    )}
                     <Text style={styles.formLabel}>Descripción</Text>
                     <TextInput
                         style={styles.formControl}
@@ -1816,6 +1876,11 @@
         backgroundColor: '#fff',
         marginBottom: 16,
     },
+     selectedImageName: {
+        marginTop: 8,
+        fontSize: 14,
+        color: '#374151',
+    },
     detailImage: {
         width: '100%',
         height: 200,
@@ -1870,6 +1935,9 @@
         padding: 12,
         borderRadius: 6,
         alignItems: 'center',
+    },
+     btnDisabled: {
+        backgroundColor: '#9ca3af',
     },
     btnSecondaryCustom: {
         backgroundColor: '#fff',
