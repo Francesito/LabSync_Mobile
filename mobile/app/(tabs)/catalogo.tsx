@@ -70,7 +70,7 @@ import * as ImagePicker from 'expo-image-picker';
         nombre: '',
         descripcion: '',
         cantidad_inicial: '',
-        estado: 'disponible',
+         estado: 'Disponible',
         riesgos_fisicos: '',
         riesgos_salud: '',
         riesgos_ambientales: '',
@@ -857,18 +857,20 @@ import * as ImagePicker from 'expo-image-picker';
         imagenFile,
         } = newMaterial;
 
-        if (!subTipo || !nombre || !cantidad_inicial || !imagenFile) {
+         const required = [nombre, cantidad_inicial, imagenFile];
+        if (tipoGeneral === 'Reactivo') required.push(subTipo);
+        if (required.some((f) => !f)) {
         setAddError('Completa todos los campos obligatorios');
         return;
         }
 
         try {
         const formData = new FormData();
-        formData.append('tipo', subTipo);
+        formData.append('tipo', tipoGeneral === 'Material' ? 'material' : subTipo);
         formData.append('nombre', nombre);
         formData.append('descripcion', descripcion);
         formData.append('cantidad_inicial', cantidad_inicial);
-        formData.append('estado', estado);
+        formData.append('estado', estado.toLowerCase());
         if (tipoGeneral === 'Reactivo') {
             formData.append('riesgos_fisicos', riesgos_fisicos);
             formData.append('riesgos_salud', riesgos_salud);
@@ -892,7 +894,7 @@ import * as ImagePicker from 'expo-image-picker';
             nombre: '',
             descripcion: '',
             cantidad_inicial: '',
-            estado: 'disponible',
+            estado: 'Disponible',
             riesgos_fisicos: '',
             riesgos_salud: '',
             riesgos_ambientales: '',
@@ -1497,17 +1499,57 @@ import * as ImagePicker from 'expo-image-picker';
                     <ScrollView style={styles.modalBody} contentContainerStyle={{ paddingBottom: 16 }}>
                     {addError && <Text style={styles.alertCustom}>{addError}</Text>}
                     <Text style={styles.formLabel}>¿Es Reactivo o Material? *</Text>
-                    <TextInput
-                        style={styles.formControl}
-                        value={newMaterial.tipoGeneral}
-                        onChangeText={(value) => setNewMaterial({ ...newMaterial, tipoGeneral: value, subTipo: '' })}
-                    />
-                    <Text style={styles.formLabel}>Categoría específica *</Text>
-                    <TextInput
-                        style={styles.formControl}
-                        value={newMaterial.subTipo}
-                        onChangeText={(value) => setNewMaterial({ ...newMaterial, subTipo: value })}
-                    />
+                     <View style={styles.optionGroup}>
+                        {['Reactivo', 'Material'].map((option) => (
+                        <TouchableOpacity
+                            key={option}
+                            style={[
+                                styles.optionButton,
+                                newMaterial.tipoGeneral === option && styles.optionButtonSelected,
+                            ]}
+                            onPress={() =>
+                                setNewMaterial({ ...newMaterial, tipoGeneral: option, subTipo: '' })
+                            }
+                        >
+                            <Text
+                            style={[
+                                styles.optionButtonText,
+                                newMaterial.tipoGeneral === option &&
+                                styles.optionButtonTextSelected,
+                            ]}
+                            >
+                            {option}
+                            </Text>
+                        </TouchableOpacity>
+                        ))}
+                    </View>
+                    {newMaterial.tipoGeneral === 'Reactivo' && (
+                        <>
+                        <Text style={styles.formLabel}>Categoría específica *</Text>
+                        <View style={styles.optionGroup}>
+                            {['liquido', 'solido'].map((option) => (
+                            <TouchableOpacity
+                                key={option}
+                                style={[
+                                styles.optionButton,
+                                newMaterial.subTipo === option && styles.optionButtonSelected,
+                                ]}
+                                onPress={() => setNewMaterial({ ...newMaterial, subTipo: option })}
+                            >
+                                <Text
+                                style={[
+                                    styles.optionButtonText,
+                                    newMaterial.subTipo === option &&
+                                    styles.optionButtonTextSelected,
+                                ]}
+                                >
+                                {option === 'liquido' ? 'Liquido' : 'Solido'}
+                                </Text>
+                            </TouchableOpacity>
+                            ))}
+                        </View>
+                        </>
+                    )}
                     <Text style={styles.formLabel}>Nombre *</Text>
                     <TextInput
                         style={styles.formControl}
@@ -1515,7 +1557,13 @@ import * as ImagePicker from 'expo-image-picker';
                         onChangeText={(value) => setNewMaterial({ ...newMaterial, nombre: value })}
                     />
                     <Text style={styles.formLabel}>
-                        Cantidad inicial {newMaterial.subTipo === 'liquido' ? '(ml)' : newMaterial.subTipo === 'solido' ? '(g)' : '(unidades)'} *
+                       Cantidad inicial{' '}
+                        {newMaterial.tipoGeneral === 'Material'
+                            ? '(u)'
+                            : newMaterial.subTipo === 'solido'
+                            ? '(gr)'
+                            : '(ml)'}{' '}
+                        *
                     </Text>
                     <TextInput
                         style={styles.formControl}
@@ -1531,11 +1579,27 @@ import * as ImagePicker from 'expo-image-picker';
                         onSubmitEditing={Keyboard.dismiss}
                     />
                     <Text style={styles.formLabel}>Estado *</Text>
-                    <TextInput
-                        style={styles.formControl}
-                        value={newMaterial.estado}
-                        onChangeText={(value) => setNewMaterial({ ...newMaterial, estado: value })}
-                    />
+                    <View style={styles.optionGroup}>
+                        {['Disponible', 'No disponible'].map((option) => (
+                        <TouchableOpacity
+                            key={option}
+                            style={[
+                                styles.optionButton,
+                                newMaterial.estado === option && styles.optionButtonSelected,
+                            ]}
+                            onPress={() => setNewMaterial({ ...newMaterial, estado: option })}
+                        >
+                            <Text
+                            style={[
+                                styles.optionButtonText,
+                                newMaterial.estado === option && styles.optionButtonTextSelected,
+                            ]}
+                            >
+                            {option}
+                            </Text>
+                        </TouchableOpacity>
+                        ))}
+                    </View> 
                     <Text style={styles.formLabel}>Imagen (.jpg) *</Text>
                   <TouchableOpacity style={styles.btnSecondaryCustom} onPress={pickImageFromGallery}>
                         <Text style={styles.btnSecondaryText}>Seleccionar imagen</Text>
@@ -1547,7 +1611,12 @@ import * as ImagePicker from 'expo-image-picker';
                     <TextInput
                         style={styles.formControl}
                         value={newMaterial.descripcion}
-                        onChangeText={(value) => setNewMaterial({ ...newMaterial, descripcion: value })}
+                         onChangeText={(value) => {
+                            const words = value.trim().split(/\s+/);
+                            if (words.filter(Boolean).length <= 100) {
+                                setNewMaterial({ ...newMaterial, descripcion: value });
+                            }
+                        }}
                         multiline
                     />
                     {newMaterial.tipoGeneral === 'Reactivo' && (
@@ -1557,6 +1626,7 @@ import * as ImagePicker from 'expo-image-picker';
                             style={styles.formControl}
                             value={newMaterial.riesgos_fisicos}
                             onChangeText={(value) => setNewMaterial({ ...newMaterial, riesgos_fisicos: value })}
+                            placeholder="Separar con ; (ej, inflamable; Oxidante)"
                             multiline
                         />
                         <Text style={styles.formLabel}>Riesgos Salud</Text>
@@ -1564,6 +1634,7 @@ import * as ImagePicker from 'expo-image-picker';
                             style={styles.formControl}
                             value={newMaterial.riesgos_salud}
                             onChangeText={(value) => setNewMaterial({ ...newMaterial, riesgos_salud: value })}
+                            placeholder="Separar con ; (ej, Toxico agudo; Irritante)"
                             multiline
                         />
                         <Text style={styles.formLabel}>Riesgos Ambientales</Text>
@@ -1571,6 +1642,7 @@ import * as ImagePicker from 'expo-image-picker';
                             style={styles.formControl}
                             value={newMaterial.riesgos_ambientales}
                             onChangeText={(value) => setNewMaterial({ ...newMaterial, riesgos_ambientales: value })}
+                            placeholder="Separar con ; (ej, Persistente)"
                             multiline
                         />
                         </>
@@ -1924,6 +1996,32 @@ searchContainer: {
         backgroundColor: '#fff',
         marginBottom: 16,
         },
+          optionGroup: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: 16,
+        gap: 8,
+    },
+    optionButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        backgroundColor: '#f3f4f6',
+    },
+    optionButtonSelected: {
+        backgroundColor: '#003579',
+        borderColor: '#003579',
+    },
+    optionButtonText: {
+        color: '#374151',
+        fontSize: 14,
+        textAlign: 'center',
+    },
+    optionButtonTextSelected: {
+        color: '#fff',
+    },
     docenteList: {
         flexDirection: 'row',
         alignItems: 'center',
