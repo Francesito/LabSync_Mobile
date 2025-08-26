@@ -31,8 +31,18 @@ export default function LoginScreen() {
       const nombre = response.data.usuario?.nombre || '';
       await SecureStore.setItemAsync('nombre', nombre);
       // Guardamos el objeto completo del usuario para futuras consultas
-      await SecureStore.setItemAsync('usuario', JSON.stringify(response.data.usuario));
-   router.replace('/(tabs)/catalogo');
+     const user = response.data.usuario;
+      if (user && !user.rol && user.rol_id) {
+        const map: Record<number, string> = {
+          1: 'alumno',
+          2: 'docente',
+          3: 'almacen',
+          4: 'administrador',
+        };
+        user.rol = map[user.rol_id] ?? user.rol;
+      }
+      await SecureStore.setItemAsync('usuario', JSON.stringify(user));
+      router.replace('/(tabs)/catalogo');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al iniciar sesión');
     }

@@ -20,8 +20,18 @@ export function useAuth() {
       try {
         const stored = await SecureStore.getItemAsync('usuario');
         if (stored) {
-          setUsuario(JSON.parse(stored));
-           } else {
+           const parsed = JSON.parse(stored);
+          if (!parsed.rol && parsed.rol_id) {
+            const map: Record<number, string> = {
+              1: 'alumno',
+              2: 'docente',
+              3: 'almacen',
+              4: 'administrador',
+            };
+            parsed.rol = map[parsed.rol_id] ?? parsed.rol;
+          }
+          setUsuario(parsed);
+        } else {
           setUsuario(null);
         }
       } catch (err) {
