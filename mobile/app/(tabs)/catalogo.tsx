@@ -15,6 +15,7 @@
     Animated,
     PanResponder,
     Keyboard,
+        Platform,
 } from 'react-native';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
@@ -28,12 +29,20 @@ import { useAuth } from '../../lib/auth';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // eslint-disable-next-line import/no-unresolved
 import * as ImagePicker from 'expo-image-picker';
+// eslint-disable-next-line import/no-unresolved
+import DateTimePicker from '@react-native-community/datetimepicker';
 
     const windowDimensions = Dimensions.get('window');
 
     function toLocalDateStr(date: Date): string {
     const offset = date.getTimezoneOffset();
     return new Date(date.getTime() - offset * 60000).toISOString().split('T')[0];
+    }
+
+    function formatDisplayDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
     }
 
     export default function CatalogoScreen() {
@@ -59,6 +68,8 @@ import * as ImagePicker from 'expo-image-picker';
     const [returnDate, setReturnDate] = useState('');
     const [minPickupDate, setMinPickupDate] = useState('');
     const [maxPickupDate, setMaxPickupDate] = useState('');
+      const [showPickupPicker, setShowPickupPicker] = useState(false);
+    const [showReturnPicker, setShowReturnPicker] = useState(false);
     const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [massAdjustments, setMassAdjustments] = useState<any>({});
@@ -138,6 +149,24 @@ import * as ImagePicker from 'expo-image-picker';
   }
 };
 
+
+    const handlePickupDateChange = (_: any, selectedDate?: Date) => {
+        setShowPickupPicker(false);
+        if (selectedDate) {
+            const dateStr = toLocalDateStr(selectedDate);
+            setPickupDate(dateStr);
+            if (returnDate && new Date(returnDate) < selectedDate) {
+                setReturnDate(dateStr);
+            }
+        }
+    };
+
+    const handleReturnDateChange = (_: any, selectedDate?: Date) => {
+        setShowReturnPicker(false);
+        if (selectedDate) {
+            setReturnDate(toLocalDateStr(selectedDate));
+        }
+    };
 
     useEffect(() => {
         const id = cartPosition.addListener(({ x, y }) => setCartPos({ x, y }));
@@ -1354,7 +1383,53 @@ import * as ImagePicker from 'expo-image-picker';
 )}
   </View>
 )}
-                    {/* Add date pickers for pickup and return */}
+               <View>
+                        <Text style={styles.formLabel}>Fecha de recolección *</Text>
+                        <TouchableOpacity
+                            style={styles.formControl}
+                            onPress={() => setShowPickupPicker(true)}
+                        >
+                            <Text style={{ color: pickupDate ? '#111827' : '#9ca3af' }}>
+                                {pickupDate || 'Selecciona fecha'}
+                            </Text>
+                        </TouchableOpacity>
+                        {showPickupPicker && (
+                            <DateTimePicker
+                                value={pickupDate ? new Date(pickupDate) : (minPickupDate ? new Date(minPickupDate) : new Date())}
+                                mode="date"
+                                display="default"
+                                minimumDate={minPickupDate ? new Date(minPickupDate) : undefined}
+                                maximumDate={maxPickupDate ? new Date(maxPickupDate) : undefined}
+                                onChange={handlePickupDateChange}
+                            />
+                        )}
+                    </View>
+                    <View>
+                        <Text style={styles.formLabel}>Fecha de devolución *</Text>
+                        <TouchableOpacity
+                            style={styles.formControl}
+                            onPress={() => {
+                                if (!pickupDate) {
+                                    Alert.alert('Selecciona primero la fecha de recolección');
+                                    return;
+                                }
+                                setShowReturnPicker(true);
+                            }}
+                        >
+                            <Text style={{ color: returnDate ? '#111827' : '#9ca3af' }}>
+                                {returnDate || 'Selecciona fecha'}
+                            </Text>
+                        </TouchableOpacity>
+                        {showReturnPicker && (
+                            <DateTimePicker
+                                value={returnDate ? new Date(returnDate) : (pickupDate ? new Date(pickupDate) : new Date())}
+                                mode="date"
+                                display="default"
+                                minimumDate={pickupDate ? new Date(pickupDate) : undefined}
+                                onChange={handleReturnDateChange}
+                            />
+                        )}
+                    </View>
                     </View>
                     <View style={styles.modalFooterCustom}>
                     <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowRequestModal(false)}>
