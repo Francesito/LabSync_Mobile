@@ -19,6 +19,8 @@ import { API_URL } from '@/constants/api';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
+const HEADER_HEIGHT = 60;
+
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -176,6 +178,8 @@ export default function AdeudosScreen() {
               fecha_devolucion: item.fecha_devolucion,
               items: [],
             };
+             } else if (!groups[item.folio].fecha_devolucion && item.fecha_devolucion) {
+            groups[item.folio].fecha_devolucion = item.fecha_devolucion;
           }
           groups[item.folio].items.push(item);
         });
@@ -205,7 +209,8 @@ export default function AdeudosScreen() {
 
   const renderItem = ({ item }: { item: GroupedAdeudo }) => {
     const isExpanded = expandedFolios.has(item.folio);
-    const statusColor = getStatusColor(item.fecha_devolucion);
+     const displayDate = item.fecha_devolucion || item.items[0]?.fecha_devolucion || null;
+    const statusColor = getStatusColor(displayDate);
     const isTablet = width > 600; // Responsive check
 
     return (
@@ -214,15 +219,15 @@ export default function AdeudosScreen() {
         style={[
           styles.card,
           { width: isTablet ? '80%' : '100%', alignSelf: 'center' },
-          isOverdue(item.fecha_devolucion) && styles.overdueCard,
-          isNearDue(item.fecha_devolucion) && !isOverdue(item.fecha_devolucion) && styles.nearDueCard,
+          isOverdue(displayDate) && styles.overdueCard,
+          isNearDue(displayDate) && !isOverdue(displayDate) && styles.nearDueCard,
         ]}
       >
         <View style={styles.cardHeader}>
           <Ionicons name="document-text-outline" size={24} color="#3b82f6" />
           <View style={styles.cardHeaderText}>
             <Text style={styles.folioText}>Folio: {item.folio}</Text>
-            <Text style={styles.dateText}>Entrega: {formatDate(item.fecha_devolucion)}</Text>
+            <Text style={styles.dateText}>Devolución: {formatDate(displayDate)}</Text>
           </View>
           <Ionicons
             name={isExpanded ? 'chevron-up' : 'chevron-down'}
@@ -233,7 +238,7 @@ export default function AdeudosScreen() {
         <View style={[styles.statusBadge, { backgroundColor: `${statusColor}20` }]}>
           <Ionicons name="time-outline" size={16} color={statusColor} />
           <Text style={[styles.statusText, { color: statusColor }]}>
-            {getStatusText(item.fecha_devolucion)}
+             {getStatusText(displayDate)}
           </Text>
         </View>
         {isExpanded && (
@@ -256,7 +261,7 @@ export default function AdeudosScreen() {
     return (
       <LinearGradient
         colors={['#f8fafc', '#eff6ff', '#e0e7ff']}
-        style={styles.container}
+        style={[styles.container, { paddingTop: HEADER_HEIGHT + 16 }]}
       >
         <ActivityIndicator size="large" color="#3b82f6" />
       </LinearGradient>
@@ -266,8 +271,11 @@ export default function AdeudosScreen() {
   return (
     <LinearGradient
       colors={['#f8fafc', '#eff6ff', '#e0e7ff']}
-      style={styles.container}
+       style={[styles.container, { paddingTop: HEADER_HEIGHT + 16 }]}
     >
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Adeudos</Text>
+      </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {!error && groupedAdeudos.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -296,6 +304,24 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 20,
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HEADER_HEIGHT,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    zIndex: 1,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
   },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
