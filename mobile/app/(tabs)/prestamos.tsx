@@ -86,7 +86,7 @@ export default function PrestamosScreen() {
   const [prestamos, setPrestamos] = useState<Prestamo[]>([]);
   const [filter, setFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'vencidas' | 'proximas' | ''>('');
-  const [groupFilter, setGroupFilter] = useState('');
+   const [groupFilter, setGroupFilter] = useState('Todos los grupos');
   const [groups, setGroups] = useState<string[]>([]);
     const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [informados, setInformados] = useState<number[]>([]);
@@ -147,7 +147,7 @@ export default function PrestamosScreen() {
       setPrestamos(grouped);
       const gruposDB = await obtenerGrupos();
       console.log('Grupos obtenidos:', gruposDB);
-      setGroups(gruposDB.map((g) => g.nombre));
+      setGroups(['Todos los grupos', ...gruposDB.map((g) => g.nombre)]);
       return grouped;
     } catch (err: any) {
       console.error('Error en loadPrestamos:', err);
@@ -184,7 +184,7 @@ export default function PrestamosScreen() {
         p.folio.toLowerCase().includes(filter.toLowerCase()) ||
         (p.nombre_alumno || p.profesor || '').toLowerCase().includes(filter.toLowerCase())
     )
-    .filter((p) => (groupFilter ? p.grupo === groupFilter : true))
+      .filter((p) => (groupFilter !== 'Todos los grupos' ? p.grupo === groupFilter : true))
     .filter((p) => {
       if (statusFilter === 'vencidas') return isOverdue(p.fecha_devolucion);
       return true;
@@ -199,7 +199,7 @@ export default function PrestamosScreen() {
     console.log('Restableciendo filtros');
     setFilter('');
     setStatusFilter('');
-    setGroupFilter('');
+    setGroupFilter('Todos los grupos');
     setShowGroupDropdown(false);
   };
 
@@ -487,11 +487,11 @@ export default function PrestamosScreen() {
                onPressIn={() => setShowGroupDropdown(!showGroupDropdown)}
             />
             <Ionicons name="chevron-down" size={isTablet ? 20 : 16} color="#003579" style={styles.groupSelectIcon} />
-            {groupFilter ? (
+             {groupFilter && groupFilter !== 'Todos los grupos' ? (
               <TouchableOpacity
                 style={styles.groupClearButton}
                 onPress={() => {
-                  setGroupFilter('');
+                   setGroupFilter('Todos los grupos');
                   setShowGroupDropdown(false);
                 }}
               >
@@ -500,15 +500,6 @@ export default function PrestamosScreen() {
             ) : null}
              {showGroupDropdown && (
               <ScrollView style={styles.groupDropdown}>
-                <TouchableOpacity
-                  style={styles.groupOption}
-                  onPress={() => {
-                    setGroupFilter('');
-                    setShowGroupDropdown(false);
-                  }}
-                >
-                  <Text style={styles.groupOptionText}>Todos los grupos</Text>
-                </TouchableOpacity>
                 {groups.map((g) => (
                   <TouchableOpacity
                     key={g}
@@ -531,35 +522,32 @@ export default function PrestamosScreen() {
       </View>
 
       {/* Prestamos List */}
-      {sorted.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <View style={styles.emptyIcon}>
-            <Ionicons name="document-text-outline" size={isTablet ? 48 : 40} color="#94a3b8" />
+       <FlatList
+        data={sorted}
+        keyExtractor={(item) => item.solicitud_id.toString()}
+        renderItem={renderPrestamoCard}
+        contentContainerStyle={styles.list}
+        numColumns={isTablet ? 2 : 1}
+        columnWrapperStyle={isTablet ? styles.columnWrapper : null}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#003579']}
+            tintColor="#003579"
+            title="Actualizando..."
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="document-text-outline" size={isTablet ? 48 : 40} color="#94a3b8" />
+            </View>
+            <Text style={styles.emptyTitle}>No hay préstamos</Text>
+            <Text style={styles.emptySubtitle}>No se encontraron préstamos entregados</Text>
           </View>
-          <Text style={styles.emptyTitle}>No hay préstamos</Text>
-          <Text style={styles.emptySubtitle}>No se encontraron préstamos entregados</Text>
-        </View>
-      ) : (
-        <FlatList
-  data={sorted}
-  keyExtractor={(item) => item.solicitud_id.toString()}
-  renderItem={renderPrestamoCard}
-  contentContainerStyle={styles.list}
-  numColumns={isTablet ? 2 : 1}
-  columnWrapperStyle={isTablet ? styles.columnWrapper : null}
-  refreshControl={
-    <RefreshControl
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      // Opcional: personalización visual
-      colors={['#003579']}   // Android
-      tintColor="#003579"    // iOS
-      title="Actualizando..."// iOS
-    />
-  }
-/>
-
-      )}
+        }
+      />
 
       {/* Modal */}
       {showModal && (
@@ -824,6 +812,7 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: window.width * 0.04,
+     flexGrow: 1,
   },
   columnWrapper: {
     justifyContent: 'space-between',
