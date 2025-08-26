@@ -85,7 +85,7 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="prestamo"
+         name="prestamos"
         options={{
           href: roleId === 3 ? undefined : null,
           title: 'Préstamos',
