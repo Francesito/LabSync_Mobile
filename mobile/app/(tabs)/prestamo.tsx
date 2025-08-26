@@ -125,7 +125,7 @@ const obtenerGrupos = async (): Promise<Grupo[]> => {
   return res.data;
 };
 
-export default function PrestamoScreen() {
+export default function PrestamosScreen() {
   const { usuario, loading: authLoading } = useAuth();
   const router = useRouter();
   const [prestamos, setPrestamos] = useState<Prestamo[]>([]);
