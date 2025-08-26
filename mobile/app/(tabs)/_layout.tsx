@@ -94,7 +94,7 @@ export default function TabLayout() {
       <Tabs.Screen
            name="prestamos"
         options={{
-          href: roleId === 3 ? undefined : null,
+         href: roleId === 3 ? '/(tabs)/prestamos' : null,
           title: 'Préstamos',
           tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal" size={28} color={color} />,
         }}
