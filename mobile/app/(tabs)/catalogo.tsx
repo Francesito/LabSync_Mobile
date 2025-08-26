@@ -30,7 +30,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // eslint-disable-next-line import/no-unresolved
 import * as ImagePicker from 'expo-image-picker';
 // eslint-disable-next-line import/no-unresolved
-import DateTimePicker from '@react-native-community/datetimepicker';
 
     const windowDimensions = Dimensions.get('window');
 
@@ -66,8 +65,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
     const [selectedDocenteId, setSelectedDocenteId] = useState('');
     const [pickupDate, setPickupDate] = useState('');
     const [returnDate, setReturnDate] = useState('');
-    const [minPickupDate, setMinPickupDate] = useState('');
-    const [maxPickupDate, setMaxPickupDate] = useState('');
       const [showPickupPicker, setShowPickupPicker] = useState(false);
     const [showReturnPicker, setShowReturnPicker] = useState(false);
     const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
@@ -148,30 +145,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
     Alert.alert('Error', 'No se pudo seleccionar la imagen');
   }
 };
-
-
-    const handlePickupDateChange = (_: any, selectedDate?: Date) => {
-        setShowPickupPicker(false);
-        if (selectedDate) {
-            const dateStr = toLocalDateStr(selectedDate);
-            setPickupDate(dateStr);
-            if (returnDate && new Date(returnDate) < selectedDate) {
-                setReturnDate(dateStr);
-            }
-        }
-    };
-
-    const handleReturnDateChange = (_: any, selectedDate?: Date) => {
-        setShowReturnPicker(false);
-        if (selectedDate) {
-           if (pickupDate && selectedDate < new Date(pickupDate)) {
-                Alert.alert('Fecha inválida', 'La devolución debe ser posterior a la recolección.');
-                setReturnDate(pickupDate);
-            } else {
-                setReturnDate(toLocalDateStr(selectedDate));
-            }
-        }
-    };
 
     useEffect(() => {
         const id = cartPosition.addListener(({ x, y }) => setCartPos({ x, y }));
@@ -261,12 +234,19 @@ import DateTimePicker from '@react-native-community/datetimepicker';
         return d;
     };
 
-    useEffect(() => {
-        const minDate = computeMinPickupDate();
-        setMinPickupDate(getFormattedDate(minDate));
-        const weekEnd = computeWeekEnd(minDate);
-        setMaxPickupDate(getFormattedDate(weekEnd));
-    }, []);
+       const getWeekDates = (start: Date) => {
+        const weekEnd = computeWeekEnd(start);
+        const dates: Date[] = [];
+        let d = new Date(start);
+        while (d <= weekEnd) {
+            dates.push(new Date(d));
+            d.setDate(d.getDate() + 1);
+        }
+        return dates;
+    };
+
+    const pickupOptions = getWeekDates(computeMinPickupDate());
+    const returnOptions = pickupDate ? getWeekDates(new Date(pickupDate)) : [];
 
     const loadUserPermissions = async () => {
         try {
@@ -1400,22 +1380,41 @@ import DateTimePicker from '@react-native-community/datetimepicker';
                             style={styles.formControl}
                              onPress={() => {
                                 setShowReturnPicker(false);
-                                setShowPickupPicker(true);
+                              setShowPickupPicker(!showPickupPicker);
                             }}
                         >
                             <Text style={{ color: pickupDate ? '#111827' : '#9ca3af' }}>
-                                {pickupDate || 'Selecciona fecha'}
+                              {pickupDate ? formatDisplayDate(pickupDate) : 'Selecciona fecha'}
                             </Text>
                         </TouchableOpacity>
                         {showPickupPicker && (
-                            <DateTimePicker
-                                value={pickupDate ? new Date(pickupDate) : (minPickupDate ? new Date(minPickupDate) : new Date())}
-                                mode="date"
-                                display="default"
-                                minimumDate={minPickupDate ? new Date(minPickupDate) : undefined}
-                                maximumDate={maxPickupDate ? new Date(maxPickupDate) : undefined}
-                                onChange={handlePickupDateChange}
-                            />
+                            <View style={styles.dateOptions}>
+                                {pickupOptions.map((d) => {
+                                    const dateStr = getFormattedDate(d);
+                                    const month = d.toLocaleString('es-ES', { month: 'long' });
+                                    const isSelected = pickupDate === dateStr;
+                                    return (
+                                        <TouchableOpacity
+                                            key={dateStr}
+                                            style={[styles.dateButton, isSelected && styles.dateButtonSelected]}
+                                            onPress={() => {
+                                                setPickupDate(dateStr);
+                                                setShowPickupPicker(false);
+                                                if (returnDate && new Date(returnDate) < new Date(dateStr)) {
+                                                    setReturnDate(dateStr);
+                                                }
+                                            }}
+                                        >
+                                            <Text style={[styles.dateMonth, isSelected && styles.dateTextSelected]}>
+                                                {month.charAt(0).toUpperCase() + month.slice(1)}
+                                            </Text>
+                                            <Text style={[styles.dateDay, isSelected && styles.dateTextSelected]}>
+                                                {d.getDate()}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
                         )}
                     </View>
                     <View>
@@ -1427,22 +1426,39 @@ import DateTimePicker from '@react-native-community/datetimepicker';
                                     Alert.alert('Selecciona primero la fecha de recolección');
                                     return;
                                 }
-                                 setShowPickupPicker(false);
-                                setShowReturnPicker(true);
+                                setShowPickupPicker(false);
+                                setShowReturnPicker(!showReturnPicker);
                             }}
                         >
                             <Text style={{ color: returnDate ? '#111827' : '#9ca3af' }}>
-                                {returnDate || 'Selecciona fecha'}
+                               {returnDate ? formatDisplayDate(returnDate) : 'Selecciona fecha'}
                             </Text>
                         </TouchableOpacity>
                         {showReturnPicker && (
-                            <DateTimePicker
-                                value={returnDate ? new Date(returnDate) : (pickupDate ? new Date(pickupDate) : new Date())}
-                                mode="date"
-                                display="default"
-                                minimumDate={pickupDate ? new Date(pickupDate) : undefined}
-                                onChange={handleReturnDateChange}
-                            />
+                            <View style={styles.dateOptions}>
+                                {returnOptions.map((d) => {
+                                    const dateStr = getFormattedDate(d);
+                                    const month = d.toLocaleString('es-ES', { month: 'long' });
+                                    const isSelected = returnDate === dateStr;
+                                    return (
+                                        <TouchableOpacity
+                                            key={dateStr}
+                                            style={[styles.dateButton, isSelected && styles.dateButtonSelected]}
+                                            onPress={() => {
+                                                setReturnDate(dateStr);
+                                                setShowReturnPicker(false);
+                                            }}
+                                        >
+                                            <Text style={[styles.dateMonth, isSelected && styles.dateTextSelected]}>
+                                                {month.charAt(0).toUpperCase() + month.slice(1)}
+                                            </Text>
+                                            <Text style={[styles.dateDay, isSelected && styles.dateTextSelected]}>
+                                                {d.getDate()}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
                         )}
                     </View>
                     </View>
@@ -2110,6 +2126,38 @@ searchContainer: {
         textAlign: 'center',
     },
     optionButtonTextSelected: {
+        color: '#fff',
+    },
+     dateOptions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 8,
+        marginBottom: 16,
+    },
+    dateButton: {
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 6,
+        backgroundColor: '#f3f4f6',
+        marginRight: 8,
+    },
+    dateButtonSelected: {
+        backgroundColor: '#003579',
+        borderColor: '#003579',
+    },
+    dateMonth: {
+        fontSize: 12,
+        color: '#374151',
+    },
+    dateDay: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#374151',
+    },
+    dateTextSelected: {
         color: '#fff',
     },
     docenteList: {
