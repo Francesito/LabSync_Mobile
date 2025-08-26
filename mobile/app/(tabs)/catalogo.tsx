@@ -189,6 +189,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
         resetCartPosition();
     };
 
+      const closeRequestModal = () => {
+        setShowRequestModal(false);
+        setShowPickupPicker(false);
+        setShowReturnPicker(false);
+    };
+
     const panResponder = useRef(
         PanResponder.create({
         onStartShouldSetPanResponder: () => true,
@@ -725,7 +731,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
         setSelectedCart([]);
         setPickupDate('');
         setReturnDate('');
-        setShowRequestModal(false);
+      closeRequestModal();
         setSelectedDocenteId(
             userPermissions.rol === 'docente' ? usuario?.id?.toString() || '' : ''
         );
@@ -1320,13 +1326,13 @@ import DateTimePicker from '@react-native-community/datetimepicker';
   visible={showRequestModal}
   animationType="fade"
   transparent={false}  // ← antes estaba en true
-  onRequestClose={() => setShowRequestModal(false)}
+   onRequestClose={closeRequestModal}
 >
                 <View style={styles.modalOverlay}>
                 <View style={styles.modalContentCustom}>
                     <View style={styles.modalHeaderCustom}>
                     <Text style={styles.modalTitle}>Confirmar Solicitud</Text>
-                    <TouchableOpacity onPress={() => setShowRequestModal(false)}>
+                   <TouchableOpacity onPress={closeRequestModal}>
                         <Ionicons name="close" size={24} color="#fff" />
                     </TouchableOpacity>
                     </View>
@@ -1441,7 +1447,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
                     </View>
                     </View>
                     <View style={styles.modalFooterCustom}>
-                    <TouchableOpacity style={styles.btnSecondaryCustom} onPress={() => setShowRequestModal(false)}>
+                  <TouchableOpacity style={styles.btnSecondaryCustom} onPress={closeRequestModal}>
                         <Text style={styles.btnSecondaryText}>Cancelar</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.btnCreateVale} onPress={handleSubmitRequest} disabled={isSubmittingRequest}>
