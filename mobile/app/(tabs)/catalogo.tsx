@@ -164,7 +164,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
     const handleReturnDateChange = (_: any, selectedDate?: Date) => {
         setShowReturnPicker(false);
         if (selectedDate) {
-            setReturnDate(toLocalDateStr(selectedDate));
+           if (pickupDate && selectedDate < new Date(pickupDate)) {
+                Alert.alert('Fecha inválida', 'La devolución debe ser posterior a la recolección.');
+                setReturnDate(pickupDate);
+            } else {
+                setReturnDate(toLocalDateStr(selectedDate));
+            }
         }
     };
 
@@ -1387,7 +1392,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
                         <Text style={styles.formLabel}>Fecha de recolección *</Text>
                         <TouchableOpacity
                             style={styles.formControl}
-                            onPress={() => setShowPickupPicker(true)}
+                             onPress={() => {
+                                setShowReturnPicker(false);
+                                setShowPickupPicker(true);
+                            }}
                         >
                             <Text style={{ color: pickupDate ? '#111827' : '#9ca3af' }}>
                                 {pickupDate || 'Selecciona fecha'}
@@ -1413,6 +1421,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
                                     Alert.alert('Selecciona primero la fecha de recolección');
                                     return;
                                 }
+                                 setShowPickupPicker(false);
                                 setShowReturnPicker(true);
                             }}
                         >
