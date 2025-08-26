@@ -101,6 +101,7 @@ export default function SolicitudesScreen() {
   const [modalEntrega, setModalEntrega] = useState<any>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false); // Nuevo estado para controlar si los datos se cargaron
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!notice) return;
@@ -162,9 +163,9 @@ export default function SolicitudesScreen() {
     initialize();
   }, [authLoading, usuario, rol]);
 
-  const fetchAll = async (token: string) => {
+  const fetchAll = async (token: string, showLoading: boolean = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setError('');
 
       console.log('Starting to fetch data for role:', rol);
@@ -266,8 +267,17 @@ export default function SolicitudesScreen() {
       console.error('Error fetching data:', err);
       setError(err.response?.data?.error || 'Error al cargar solicitudes');
     } finally {
-      setLoading(false);
+       if (showLoading) setLoading(false);
     }
+  };
+
+   const onRefresh = async () => {
+    setRefreshing(true);
+    const token = await SecureStore.getItemAsync('token');
+    if (token) {
+      await fetchAll(token, false);
+    }
+    setRefreshing(false);
   };
 
   function agrupar(rows: any, rolVista: any, gruposMap: any) {
@@ -870,6 +880,8 @@ export default function SolicitudesScreen() {
         data={dataToShow}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderCard}
+         refreshing={refreshing}
+        onRefresh={onRefresh}
         contentContainerStyle={
           dataToShow.length ? styles.list : [styles.list, styles.emptyContainer]
         }
