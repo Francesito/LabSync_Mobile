@@ -13,26 +13,25 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const [roleId, setRoleId] = useState<number | null>(null);
 
- useEffect(() => {
-  const loadRole = async () => {
-    const userStr = await SecureStore.getItemAsync('usuario');
-    if (!userStr) return setRoleId(null);
-    try {
-      const parsed = JSON.parse(userStr);
-      const role = Number(parsed.rol_id) || null;
-      
-      // AGREGAR ESTOS LOGS AQUÍ
-      console.log('Usuario completo:', parsed);
-      console.log('roleId extraído:', role);
-      console.log('Should show prestamos tab:', role === 3);
-      
-      setRoleId(role);
-    } catch {
-      setRoleId(null);
-    }
-  };
-  loadRole();
-}, []);
+  useEffect(() => {
+    const loadRole = async () => {
+      const userStr = await SecureStore.getItemAsync('usuario');
+      if (!userStr) return setRoleId(null);
+      try {
+        const parsed = JSON.parse(userStr);
+        const role = Number(parsed.rol_id) || null;
+        
+        console.log('Usuario completo:', parsed);
+        console.log('roleId extraído:', role);
+        console.log('Should show prestamos tab:', role === 3);
+        
+        setRoleId(role);
+      } catch {
+        setRoleId(null);
+      }
+    };
+    loadRole();
+  }, []);
 
   if (roleId === null) {
     return (
@@ -92,9 +91,9 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-           name="prestamos"
+        name="prestamos"
         options={{
-         href: roleId === 3 ? undefined : null,
+          href: roleId === 3 ? undefined : null, // Usa la ruta por defecto /(tabs)/prestamos
           title: 'Préstamos',
           tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal" size={28} color={color} />,
         }}

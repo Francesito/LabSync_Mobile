@@ -11,15 +11,12 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../lib/auth';
-import { API_URL } from '@/constants/api';
+import { obtenerPrestamosEntregados, obtenerDetalleSolicitud, registrarDevolucion, informarPrestamoVencido, obtenerGrupos } from '@/lib/api';
 
 // Get window dimensions for responsive design
 const window = Dimensions.get('window');
@@ -82,49 +79,6 @@ const formatMaterialName = (name: string | undefined): string => {
   return name.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
-// Mock API functions (replace with actual implementations)
-const obtenerPrestamosEntregados = async (): Promise<any[]> => {
-  const token = await SecureStore.getItemAsync('token');
-  const res = await axios.get(`${API_URL}/api/prestamos/entregados`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-};
-
-const obtenerDetalleSolicitud = async (solicitud_id: number): Promise<Detalle> => {
-  const token = await SecureStore.getItemAsync('token');
-  const res = await axios.get(`${API_URL}/api/solicitudes/detalle/${solicitud_id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-};
-
-const registrarDevolucion = async (solicitud_id: number, devoluciones: { item_id: number; cantidad_devuelta: number }[]): Promise<void> => {
-  const token = await SecureStore.getItemAsync('token');
-  await axios.post(
-    `${API_URL}/api/prestamos/devolucion/${solicitud_id}`,
-    { devoluciones },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-};
-
-const informarPrestamoVencido = async (solicitud_id: number): Promise<void> => {
-  const token = await SecureStore.getItemAsync('token');
-  await axios.post(
-    `${API_URL}/api/prestamos/informar-vencido/${solicitud_id}`,
-    {},
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-};
-
-const obtenerGrupos = async (): Promise<Grupo[]> => {
-  const token = await SecureStore.getItemAsync('token');
-  const res = await axios.get(`${API_URL}/api/grupos`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-};
-
 export default function PrestamosScreen() {
   const { usuario, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -143,24 +97,33 @@ export default function PrestamosScreen() {
 
   // Load prestamos and groups on mount
   useEffect(() => {
+    console.log('Cargando PrestamosScreen');
+    console.log('Usuario:', usuario);
+    console.log('Rol:', usuario?.rol);
+    console.log('authLoading:', authLoading);
     if (authLoading) return;
     if (!usuario) {
       setError('Inicia sesión para ver préstamos');
+      console.log('Redirigiendo a /login: usuario no encontrado');
       router.replace('/login');
       return;
     }
     if (usuario.rol !== 'almacen') {
       setError('Acceso restringido a almacenistas');
+      console.log('Redirigiendo a /login: rol no es almacen');
       router.replace('/login');
       return;
     }
+    console.log('Llamando a loadPrestamos');
     loadPrestamos();
   }, [usuario, authLoading]);
 
   const loadPrestamos = async (): Promise<Prestamo[]> => {
+    console.log('Iniciando loadPrestamos');
     setLoading(true);
     try {
       const data = await obtenerPrestamosEntregados();
+      console.log('Datos de préstamos obtenidos:', data);
       const grouped = Object.values(
         data.reduce((acc: { [key: number]: Prestamo }, item) => {
           if (!acc[item.solicitud_id]) {
@@ -176,23 +139,38 @@ export default function PrestamosScreen() {
           return acc;
         }, {})
       );
+      console.log('Préstamos agrupados:', grouped);
       setPrestamos(grouped);
       const gruposDB = await obtenerGrupos();
+      console.log('Grupos obtenidos:', gruposDB);
       setGroups(gruposDB.map((g) => g.nombre));
       return grouped;
     } catch (err: any) {
-      setError(err.response?.data?.error || 'No se pudieron cargar los préstamos entregados');
+      console.error('Error en loadPrestamos:', err);
+      console.log('Detalles del error:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+        url: err.config?.url,
+      });
+      setError(
+        err.response?.status === 404
+          ? 'La ruta de la API no se encuentra. Verifica la configuración del servidor.'
+          : err.response?.data?.error || 'No se pudieron cargar los préstamos entregados'
+      );
       return [];
     } finally {
+      console.log('Finalizando loadPrestamos');
       setLoading(false);
     }
   };
 
   // Filter and sort prestamos
   const filtered = prestamos
-    .filter((p) =>
-      p.folio.toLowerCase().includes(filter.toLowerCase()) ||
-      (p.nombre_alumno || p.profesor || '').toLowerCase().includes(filter.toLowerCase())
+    .filter(
+      (p) =>
+        p.folio.toLowerCase().includes(filter.toLowerCase()) ||
+        (p.nombre_alumno || p.profesor || '').toLowerCase().includes(filter.toLowerCase())
     )
     .filter((p) => (groupFilter ? p.grupo === groupFilter : true))
     .filter((p) => {
@@ -206,43 +184,55 @@ export default function PrestamosScreen() {
       : filtered;
 
   const resetFilters = () => {
+    console.log('Restableciendo filtros');
     setFilter('');
     setStatusFilter('');
     setGroupFilter('');
   };
 
   const openModal = async (solicitud_id: number) => {
+    console.log('Abriendo modal para solicitud:', solicitud_id);
     setSelectedSolicitud(solicitud_id);
     setShowModal(true);
     setDetalle(null);
     try {
       const det = await obtenerDetalleSolicitud(solicitud_id);
-      det.items = det.items.map((i) => ({ ...i, devolver: 0, entregado: false }));
+      console.log('Detalle cargado:', det);
+      det.items = det.items.map((i: DetalleItem) => ({ ...i, devolver: 0, entregado: false }));
       setDetalle(det);
     } catch (err: any) {
+      console.error('Error en openModal:', err);
       setError(err.response?.data?.error || 'No se pudo obtener el detalle del préstamo');
       closeModal();
     }
   };
 
   const closeModal = () => {
+    console.log('Cerrando modal');
     setShowModal(false);
     setDetalle(null);
     setSelectedSolicitud(null);
   };
 
   const handleInformar = async (id: number) => {
+    console.log('Iniciando handleInformar para solicitud:', id);
     try {
       await informarPrestamoVencido(id);
       setInformados((prev) => [...prev, id]);
       Alert.alert('Éxito', 'Notificación enviada');
+      console.log('Notificación enviada exitosamente');
     } catch (err: any) {
+      console.error('Error en handleInformar:', err);
       setError(err.response?.data?.error || 'No se pudo enviar la notificación');
     }
   };
 
   const handleSave = async () => {
-    if (!detalle || !selectedSolicitud) return;
+    if (!detalle || !selectedSolicitud) {
+      console.log('handleSave: detalle o selectedSolicitud no están definidos');
+      return;
+    }
+    console.log('Iniciando handleSave para solicitud:', selectedSolicitud);
     setSaving(true);
     try {
       const esAlumno = !!detalle.nombre_alumno;
@@ -253,33 +243,42 @@ export default function PrestamosScreen() {
           cantidad_devuelta: esAlumno ? item.devolver : item.entregado ? item.cantidad : 0,
         }));
 
+      console.log('Devoluciones a registrar:', devoluciones);
       if (devoluciones.length === 0) {
+        console.log('No hay devoluciones para registrar');
         setSaving(false);
         return;
       }
 
       await registrarDevolucion(selectedSolicitud, devoluciones);
-
+      console.log('Devolución registrada, recargando préstamos');
       const grouped = await loadPrestamos();
+      console.log('Préstamos recargados:', grouped);
       if (!grouped.some((g) => g.solicitud_id === selectedSolicitud)) {
+        console.log('Solicitud ya no existe, cerrando modal');
         closeModal();
         return;
       }
 
       const nuevoDetalle = await obtenerDetalleSolicitud(selectedSolicitud);
-      nuevoDetalle.items = nuevoDetalle.items.map((i) => ({
+      console.log('Nuevo detalle cargado:', nuevoDetalle);
+      nuevoDetalle.items = nuevoDetalle.items.map((i: DetalleItem) => ({
         ...i,
         devolver: 0,
         entregado: false,
       }));
       if (nuevoDetalle.items.length === 0) {
+        console.log('No hay más items, cerrando modal');
         closeModal();
         return;
       }
       setDetalle(nuevoDetalle);
+      console.log('Detalle actualizado:', nuevoDetalle);
     } catch (err: any) {
+      console.error('Error en handleSave:', err);
       setError(err.response?.data?.error || 'No se pudo guardar la devolución');
     } finally {
+      console.log('Finalizando handleSave');
       setSaving(false);
     }
   };
@@ -402,6 +401,7 @@ export default function PrestamosScreen() {
   };
 
   if (authLoading || loading) {
+    console.log('Mostrando pantalla de carga: authLoading:', authLoading, 'loading:', loading);
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator size="large" color="#003579" />
@@ -410,6 +410,7 @@ export default function PrestamosScreen() {
   }
 
   if (error) {
+    console.log('Mostrando error:', error);
     return (
       <SafeAreaView style={styles.container}>
         <Text style={styles.errorText}>{error}</Text>
@@ -417,6 +418,7 @@ export default function PrestamosScreen() {
     );
   }
 
+  console.log('Renderizando pantalla principal, préstamos:', prestamos);
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
