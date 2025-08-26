@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -87,6 +88,7 @@ export default function PrestamosScreen() {
   const [statusFilter, setStatusFilter] = useState<'vencidas' | 'proximas' | ''>('');
   const [groupFilter, setGroupFilter] = useState('');
   const [groups, setGroups] = useState<string[]>([]);
+    const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [informados, setInformados] = useState<number[]>([]);
   const [selectedSolicitud, setSelectedSolicitud] = useState<number | null>(null);
   const [detalle, setDetalle] = useState<Detalle | null>(null);
@@ -94,6 +96,8 @@ export default function PrestamosScreen() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
 
   // Load prestamos and groups on mount
   useEffect(() => {
@@ -165,6 +169,14 @@ export default function PrestamosScreen() {
     }
   };
 
+  const onRefresh = async () => {
+  console.log('Usuario hizo pull-to-refresh');
+  setRefreshing(true);
+  await loadPrestamos();
+  setRefreshing(false);
+};
+
+
   // Filter and sort prestamos
   const filtered = prestamos
     .filter(
@@ -188,6 +200,7 @@ export default function PrestamosScreen() {
     setFilter('');
     setStatusFilter('');
     setGroupFilter('');
+    setShowGroupDropdown(false);
   };
 
   const openModal = async (solicitud_id: number) => {
@@ -469,16 +482,47 @@ export default function PrestamosScreen() {
               style={styles.groupSelectInput}
               value={groupFilter}
               placeholder="Todos los grupos"
-              onChangeText={setGroupFilter}
               selectTextOnFocus={false}
               editable={false}
+               onPressIn={() => setShowGroupDropdown(!showGroupDropdown)}
             />
             <Ionicons name="chevron-down" size={isTablet ? 20 : 16} color="#003579" style={styles.groupSelectIcon} />
             {groupFilter ? (
-              <TouchableOpacity style={styles.groupClearButton} onPress={() => setGroupFilter('')}>
+              <TouchableOpacity
+                style={styles.groupClearButton}
+                onPress={() => {
+                  setGroupFilter('');
+                  setShowGroupDropdown(false);
+                }}
+              >
                 <Ionicons name="close" size={isTablet ? 20 : 16} color="#003579" />
               </TouchableOpacity>
             ) : null}
+             {showGroupDropdown && (
+              <ScrollView style={styles.groupDropdown}>
+                <TouchableOpacity
+                  style={styles.groupOption}
+                  onPress={() => {
+                    setGroupFilter('');
+                    setShowGroupDropdown(false);
+                  }}
+                >
+                  <Text style={styles.groupOptionText}>Todos los grupos</Text>
+                </TouchableOpacity>
+                {groups.map((g) => (
+                  <TouchableOpacity
+                    key={g}
+                    style={styles.groupOption}
+                    onPress={() => {
+                      setGroupFilter(g);
+                      setShowGroupDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.groupOptionText}>{g}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
           <TouchableOpacity style={styles.clearButton} onPress={resetFilters}>
             <Text style={styles.clearButtonText}>Limpiar</Text>
@@ -497,13 +541,24 @@ export default function PrestamosScreen() {
         </View>
       ) : (
         <FlatList
-          data={sorted}
-          keyExtractor={(item) => item.solicitud_id.toString()}
-          renderItem={renderPrestamoCard}
-          contentContainerStyle={styles.list}
-          numColumns={isTablet ? 2 : 1}
-          columnWrapperStyle={isTablet ? styles.columnWrapper : null}
-        />
+  data={sorted}
+  keyExtractor={(item) => item.solicitud_id.toString()}
+  renderItem={renderPrestamoCard}
+  contentContainerStyle={styles.list}
+  numColumns={isTablet ? 2 : 1}
+  columnWrapperStyle={isTablet ? styles.columnWrapper : null}
+  refreshControl={
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      // Opcional: personalización visual
+      colors={['#003579']}   // Android
+      tintColor="#003579"    // iOS
+      title="Actualizando..."// iOS
+    />
+  }
+/>
+
       )}
 
       {/* Modal */}
@@ -731,6 +786,28 @@ const styles = StyleSheet.create({
     right: isTablet ? 32 : 24,
     top: '50%',
     transform: [{ translateY: isTablet ? -10 : -8 }],
+  },
+  groupDropdown: {
+    position: 'absolute',
+    top: isTablet ? 48 : 40,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: isTablet ? 12 : 8,
+    zIndex: 10,
+    maxHeight: isTablet ? 200 : 150,
+  },
+  groupOption: {
+    paddingVertical: isTablet ? 12 : 8,
+    paddingHorizontal: isTablet ? 12 : 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  groupOptionText: {
+    fontSize: isTablet ? 14 : 12,
+    color: '#003579',
   },
   clearButton: {
     paddingVertical: isTablet ? 10 : 8,
