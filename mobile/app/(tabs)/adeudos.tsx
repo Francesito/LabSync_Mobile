@@ -163,7 +163,8 @@ export default function AdeudosScreen() {
       try {
         setLoading(true);
         const token = await SecureStore.getItemAsync('token');
-        const res = await axios.get(`${API_URL}/api/materials/adeudos`, {
+       // Include return dates by calling the entrega endpoint
+        const res = await axios.get(`${API_URL}/api/materials/adeudos/entrega`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         let data: RawAdeudo[] = Array.isArray(res.data) ? res.data : res.data?.adeudos || [];

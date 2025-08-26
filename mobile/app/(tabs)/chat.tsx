@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth'; // Assuming this is adapted for React Native
+import { API_URL } from '@/constants/api';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android') {
@@ -58,7 +59,8 @@ interface RawContacto {
   rol: string;
 }
 
-const BASE = `${process.env.EXPO_PUBLIC_API_URL}/api`; // Use EXPO_PUBLIC_ for env vars in Expo
+// Base API URL for requests
+const BASE = `${API_URL}/api`;
 
 // Date formatting functions
 const formatearFecha = (fecha: string): string => {
