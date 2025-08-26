@@ -12,6 +12,7 @@ import {
   UIManager,
   Dimensions,
   useWindowDimensions,
+    RefreshControl,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
@@ -93,9 +94,10 @@ function normalizarAdeudo(a: RawAdeudo): Adeudo {
 // Date parsing and formatting
 const parseDate = (str: string | null): Date | null => {
   if (!str) return null;
- const normalized = str.replace(' ', 'T');
-  const date = new Date(normalized);
-  return isNaN(date.getTime()) ? null : date;
+  const datePart = str.split(/[T ]/)[0];
+  const [year, month, day] = datePart.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
 };
 
 const formatDate = (str: string | null): string => {
@@ -157,43 +159,56 @@ export default function AdeudosScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [expandedFolios, setExpandedFolios] = useState<Set<string>>(new Set());
   const { width } = useWindowDimensions(); // For responsiveness
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  useEffect(() => {
-    const fetchAdeudos = async () => {
-      try {
-        setLoading(true);
-        const token = await SecureStore.getItemAsync('token');
-       // Include return dates by calling the entrega endpoint
-        const res = await axios.get(`${API_URL}/api/materials/adeudos/entrega`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        let data: RawAdeudo[] = Array.isArray(res.data) ? res.data : res.data?.adeudos || [];
-        const normalized = data.map(normalizarAdeudo);
+// 👇 Añadir dentro de AdeudosScreen, después de los useState y antes del useEffect
+const fetchAdeudos = async (showLoading: boolean = true) => {
+  try {
+    if (showLoading) setLoading(true);
+    const token = await SecureStore.getItemAsync('token');
 
-        // Group by folio
-        const groups: { [folio: string]: GroupedAdeudo } = {};
-        normalized.forEach((item) => {
-          if (!groups[item.folio]) {
-            groups[item.folio] = {
-              folio: item.folio,
-              fecha_devolucion: item.fecha_devolucion,
-              items: [],
-            };
-             } else if (!groups[item.folio].fecha_devolucion && item.fecha_devolucion) {
-            groups[item.folio].fecha_devolucion = item.fecha_devolucion;
-          }
-          groups[item.folio].items.push(item);
-        });
-        setGroupedAdeudos(Object.values(groups));
-        setAdeudos(normalized);
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'Error al obtener adeudos');
-      } finally {
-        setLoading(false);
+    const res = await axios.get(`${API_URL}/api/materials/adeudos/entrega`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const raw: unknown = res.data;
+    const data: RawAdeudo[] = Array.isArray(raw as any)
+      ? (raw as RawAdeudo[])
+      : ((raw as any)?.adeudos ?? []);
+
+    const normalized = data.map(normalizarAdeudo);
+
+    // Agrupar por folio
+    const groups: Record<string, GroupedAdeudo> = {};
+    normalized.forEach((item) => {
+      if (!groups[item.folio]) {
+        groups[item.folio] = {
+          folio: item.folio,
+          fecha_devolucion: item.fecha_devolucion,
+          items: [],
+        };
+      } else if (!groups[item.folio].fecha_devolucion && item.fecha_devolucion) {
+        groups[item.folio].fecha_devolucion = item.fecha_devolucion;
       }
-    };
-    fetchAdeudos();
-  }, []);
+      groups[item.folio].items.push(item);
+    });
+
+    setGroupedAdeudos(Object.values(groups));
+    setAdeudos(normalized);
+    setError('');
+  } catch (err: any) {
+    setError(err?.response?.data?.error || 'Error al obtener adeudos');
+  } finally {
+    if (showLoading) setLoading(false);
+    setRefreshing(false);
+  }
+};
+
+
+useEffect(() => {
+  fetchAdeudos(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   const toggleExpand = (folio: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -207,6 +222,12 @@ export default function AdeudosScreen() {
       return newSet;
     });
   };
+
+const onRefresh = () => {
+  setRefreshing(true);
+  fetchAdeudos(false);
+};
+
 
   const renderItem = ({ item }: { item: GroupedAdeudo }) => {
     const isExpanded = expandedFolios.has(item.folio);
@@ -292,6 +313,9 @@ export default function AdeudosScreen() {
           keyExtractor={(item) => item.folio}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
+             refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         />
       )}
     </LinearGradient>
