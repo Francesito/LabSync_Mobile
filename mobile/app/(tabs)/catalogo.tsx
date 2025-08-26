@@ -42,7 +42,12 @@ import * as ImagePicker from 'expo-image-picker';
     if (!dateStr) return '';
     const [year, month, day] = dateStr.split('-');
     return `${day}/${month}/${year}`;
-    }
+  }
+
+function parseLocalDate(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
 
     export default function CatalogoScreen() {
     const router = useRouter();
@@ -245,8 +250,8 @@ import * as ImagePicker from 'expo-image-picker';
         return dates;
     };
 
-    const pickupOptions = getWeekDates(computeMinPickupDate());
-    const returnOptions = pickupDate ? getWeekDates(new Date(pickupDate)) : [];
+const pickupOptions = getWeekDates(computeMinPickupDate());
+const returnOptions = pickupDate ? getWeekDates(parseLocalDate(pickupDate)) : [];
 
     const loadUserPermissions = async () => {
         try {
@@ -1400,7 +1405,7 @@ import * as ImagePicker from 'expo-image-picker';
                                             onPress={() => {
                                                 setPickupDate(dateStr);
                                                 setShowPickupPicker(false);
-                                                if (returnDate && new Date(returnDate) < new Date(dateStr)) {
+                                                if (returnDate && parseLocalDate(returnDate) < parseLocalDate(dateStr)) {
                                                     setReturnDate(dateStr);
                                                 }
                                             }}

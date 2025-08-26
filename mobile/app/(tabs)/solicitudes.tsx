@@ -80,8 +80,9 @@ const EstadoBadge = ({ estado }: { estado: any }) => {
 export default function SolicitudesScreen() {
   const { usuario, loading: authLoading } = useAuth();
   const router = useRouter();
+  const rol = usuario?.rol?.toLowerCase();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Cambio: inicializar en false
   const [error, setError] = useState('');
   const [grupos, setGrupos] = useState<any>({});
   const [alumnoData, setAlumnoData] = useState<any[]>([]);
@@ -98,7 +99,8 @@ export default function SolicitudesScreen() {
   const [activeTab, setActiveTab] = useState('alumnos');
   const [search, setSearch] = useState('');
   const [modalEntrega, setModalEntrega] = useState<any>(null);
-   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false); // Nuevo estado para controlar si los datos se cargaron
 
   useEffect(() => {
     if (!notice) return;
@@ -123,111 +125,150 @@ export default function SolicitudesScreen() {
   }, []);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!usuario) {
-      setError('Inicia sesión para ver solicitudes');
-      router.replace('/login');
-      return;
-    }
+    // Mejorar la lógica de inicialización
     const initialize = async () => {
-      const token = await SecureStore.getItemAsync('token');
-      if (!token) {
+      if (authLoading) {
+        console.log('Auth is loading...');
+        return;
+      }
+
+      if (!usuario) {
+        console.log('No user found, redirecting to login');
         setError('Inicia sesión para ver solicitudes');
         router.replace('/login');
         return;
       }
 
-      const fetchAll = async () => {
-        try {
-          setLoading(true);
+      console.log('User found:', usuario);
+      console.log('User role:', rol);
 
-          try {
-            const g = await axios.get(`${API_URL}/api/grupos`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const map = g.data.reduce((acc: any, it: any) => {
-              acc[it.id] = it.nombre;
-              return acc;
-            }, {});
-            setGrupos(map);
-          } catch (_) {}
-
-          let alumnoArr: any[] = [];
-          let docAprobarArr: any[] = [];
-          let docMiasArr: any[] = [];
-          let almAlumnosArr: any[] = [];
-          let almDocentesArr: any[] = [];
-
-          if (usuario.rol === 'alumno') {
-            const { data } = await axios.get(`${API_URL}/api/materials/usuario/solicitudes`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            alumnoArr = agrupar(data, 'alumno', grupos);
-            setAlumnoData(alumnoArr);
-          }
-
-          if (usuario.rol === 'docente') {
-            const [aprobarRes, miasRes] = await Promise.all([
-              axios.get(`${API_URL}/api/materials/solicitudes/docente/aprobar`, {
-                headers: { Authorization: `Bearer ${token}` },
-              }),
-              axios.get(`${API_URL}/api/materials/solicitudes/docente/mias`, {
-                headers: { Authorization: `Bearer ${token}` },
-              }),
-            ]);
-            docAprobarArr = agrupar(aprobarRes.data, 'docente', grupos);
-            docMiasArr = agrupar(miasRes.data, 'docente', grupos);
-            setDocAprobar(docAprobarArr);
-            setDocMias(docMiasArr);
-          }
-
-          if (usuario.rol === 'almacen') {
-            const { data } = await axios.get(`${API_URL}/api/materials/solicitudes/almacen`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const grouped = agrupar(data, 'almacen', grupos);
-            almAlumnosArr = grouped.filter((s: any) => !s.isDocenteRequest);
-            almDocentesArr = grouped.filter((s: any) => s.isDocenteRequest);
-            setAlmAlumnos(almAlumnosArr);
-            setAlmDocentes(almDocentesArr);
-          }
-
-          const todayStr = toLocalDateStr(new Date());
-          const manana = new Date();
-          manana.setDate(manana.getDate() + 1);
-          const mananaStr = toLocalDateStr(manana);
-
-          let all: any[] = [];
-          if (usuario.rol === 'alumno') all = alumnoArr;
-          if (usuario.rol === 'docente') all = [...docAprobarArr, ...docMiasArr];
-          if (usuario.rol === 'almacen') all = [...almAlumnosArr, ...almDocentesArr];
-          const pendientes = all.filter((s: any) => s.estado === 'entrega pendiente');
-          const hoyCount = pendientes.filter((s: any) => (s.fecha_recoleccion || '').split('T')[0] === todayStr).length;
-          const mananaCount = pendientes.filter((s: any) => (s.fecha_recoleccion || '').split('T')[0] === mananaStr).length;
-          if (usuario.rol === 'almacen' && pendientes.length > 0) {
-            let msg = '';
-            if (hoyCount > 0 && mananaCount > 0) {
-              msg = `Tienes ${pendientes.length} solicitudes: ${hoyCount} para entregar hoy y ${mananaCount} para entregar mañana`;
-            } else if (hoyCount > 0) {
-              msg = `Tienes ${hoyCount} solicitudes para entregar hoy`;
-            } else if (mananaCount > 0) {
-              msg = `Tienes ${mananaCount} solicitudes para entregar mañana`;
-            }
-            if (msg) {
-              setNotice(msg);
-            }
-          }
-
-          setError('');
-        } finally {
-          setLoading(false);
+      try {
+        const token = await SecureStore.getItemAsync('token');
+        if (!token) {
+          console.log('No token found');
+          setError('Inicia sesión para ver solicitudes');
+          router.replace('/login');
+          return;
         }
-      };
 
-      fetchAll();
+        console.log('Token found, fetching data...');
+        await fetchAll(token);
+      } catch (err) {
+        console.error('Error in initialize:', err);
+        setError('Error al inicializar');
+      }
     };
+
     initialize();
-  }, [authLoading, usuario]);
+  }, [authLoading, usuario, rol]);
+
+  const fetchAll = async (token: string) => {
+    try {
+      setLoading(true);
+      setError('');
+
+      console.log('Starting to fetch data for role:', rol);
+
+      // Obtener grupos
+      try {
+        const g = await axios.get(`${API_URL}/api/grupos`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const map = g.data.reduce((acc: any, it: any) => {
+          acc[it.id] = it.nombre;
+          return acc;
+        }, {});
+        setGrupos(map);
+        console.log('Groups loaded:', map);
+      } catch (err) {
+        console.log('Error loading groups:', err);
+      }
+
+      let alumnoArr: any[] = [];
+      let docAprobarArr: any[] = [];
+      let docMiasArr: any[] = [];
+      let almAlumnosArr: any[] = [];
+      let almDocentesArr: any[] = [];
+
+      // Cargar datos según el rol
+      if (rol === 'alumno') {
+        console.log('Fetching data for alumno...');
+        const { data } = await axios.get(`${API_URL}/api/materials/usuario/solicitudes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        alumnoArr = agrupar(data, 'alumno', grupos);
+        setAlumnoData(alumnoArr);
+        console.log('Alumno data loaded:', alumnoArr.length, 'items');
+      }
+
+      if (rol === 'docente') {
+        console.log('Fetching data for docente...');
+        const [aprobarRes, miasRes] = await Promise.all([
+          axios.get(`${API_URL}/api/materials/solicitudes/docente/aprobar`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${API_URL}/api/materials/solicitudes/docente/mias`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        docAprobarArr = agrupar(aprobarRes.data, 'docente', grupos);
+        docMiasArr = agrupar(miasRes.data, 'docente', grupos);
+        setDocAprobar(docAprobarArr);
+        setDocMias(docMiasArr);
+        console.log('Docente data loaded - aprobar:', docAprobarArr.length, 'mias:', docMiasArr.length);
+      }
+
+      if (rol === 'almacen') {
+        console.log('Fetching data for almacen...');
+        const { data } = await axios.get(`${API_URL}/api/materials/solicitudes/almacen`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const grouped = agrupar(data, 'almacen', grupos);
+        almAlumnosArr = grouped.filter((s: any) => !s.isDocenteRequest);
+        almDocentesArr = grouped.filter((s: any) => s.isDocenteRequest);
+        setAlmAlumnos(almAlumnosArr);
+        setAlmDocentes(almDocentesArr);
+        console.log('Almacen data loaded - alumnos:', almAlumnosArr.length, 'docentes:', almDocentesArr.length);
+      }
+
+      // Configurar notificaciones
+      const todayStr = toLocalDateStr(new Date());
+      const manana = new Date();
+      manana.setDate(manana.getDate() + 1);
+      const mananaStr = toLocalDateStr(manana);
+
+      let all: any[] = [];
+      if (rol === 'alumno') all = alumnoArr;
+      if (rol === 'docente') all = [...docAprobarArr, ...docMiasArr];
+      if (rol === 'almacen') all = [...almAlumnosArr, ...almDocentesArr];
+      
+      const pendientes = all.filter((s: any) => s.estado === 'entrega pendiente');
+      const hoyCount = pendientes.filter((s: any) => (s.fecha_recoleccion || '').split('T')[0] === todayStr).length;
+      const mananaCount = pendientes.filter((s: any) => (s.fecha_recoleccion || '').split('T')[0] === mananaStr).length;
+      
+      if (rol === 'almacen' && pendientes.length > 0) {
+        let msg = '';
+        if (hoyCount > 0 && mananaCount > 0) {
+          msg = `Tienes ${pendientes.length} solicitudes: ${hoyCount} para entregar hoy y ${mananaCount} para entregar mañana`;
+        } else if (hoyCount > 0) {
+          msg = `Tienes ${hoyCount} solicitudes para entregar hoy`;
+        } else if (mananaCount > 0) {
+          msg = `Tienes ${mananaCount} solicitudes para entregar mañana`;
+        }
+        if (msg) {
+          setNotice(msg);
+        }
+      }
+
+      setDataLoaded(true);
+      console.log('All data loaded successfully');
+    } catch (err: any) {
+      console.error('Error fetching data:', err);
+      setError(err.response?.data?.error || 'Error al cargar solicitudes');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   function agrupar(rows: any, rolVista: any, gruposMap: any) {
     const by: any = {};
@@ -399,14 +440,14 @@ export default function SolicitudesScreen() {
   let showDateFilter = false;
   let title = 'Solicitudes de préstamo';
 
-  if (usuario?.rol === 'alumno') {
+  if (rol === 'alumno') {
     dataToShow = alumnoData;
     title = 'Mis solicitudes';
-  } else if (usuario?.rol === 'docente') {
+  } else if (rol === 'docente') {
     showButtons = true;
     showSearch = true;
     dataToShow = activeTab === 'alumnos' ? applySearch(docAprobar, true) : applySearch(docMias);
-  } else if (usuario?.rol === 'almacen') {
+  } else if (rol === 'almacen') {
     showButtons = true;
     showSearch = true;
     showDateFilter = true;
@@ -431,7 +472,7 @@ export default function SolicitudesScreen() {
     setSelectedItems([]);
   };
 
-    const toggleItem = (id: string) => {
+  const toggleItem = (id: string) => {
     setSelectedItems((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
@@ -484,7 +525,7 @@ export default function SolicitudesScreen() {
 
       const maxHeaderWidth = (pageWidth - margin * 2) * 0.4;
       const maxHeaderHeight = 40;
-      const originalRatio = 3.5; // Adjust as needed
+      const originalRatio = 3.5;
 
       let headerWidth, headerHeight;
       if (maxHeaderWidth / originalRatio <= maxHeaderHeight) {
@@ -535,7 +576,7 @@ export default function SolicitudesScreen() {
         tableWidth: pageWidth - margin * 2,
       });
 
-       const startYTable = (doc as any).lastAutoTable.finalY;
+      const startYTable = (doc as any).lastAutoTable.finalY;
       const items = vale.items || [];
       const rows = [];
       for (let i = 0; i < 10; i++) {
@@ -566,7 +607,7 @@ export default function SolicitudesScreen() {
         tableWidth: pageWidth - margin * 2,
       });
 
-    const afterTableY = (doc as any).lastAutoTable.finalY + 4;
+      const afterTableY = (doc as any).lastAutoTable.finalY + 4;
       const profesor = vale.profesor || '';
 
       doc.setFontSize(10);
@@ -616,14 +657,14 @@ export default function SolicitudesScreen() {
   const renderCard = ({ item: s }: { item: any }) => {
     const createDateStr = (s.fecha_solicitud || '').split('T')[0];
     const recoDateStr = (s.fecha_recoleccion || '').split('T')[0];
-    const dateStr = usuario?.rol === 'almacen' ? recoDateStr : createDateStr;
+    const dateStr = rol === 'almacen' ? recoDateStr : createDateStr;
     const todayStr = toLocalDateStr(new Date());
     const isOverdue = recoDateStr && recoDateStr < todayStr && s.estado === 'entrega pendiente';
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = toLocalDateStr(tomorrow);
     const showMsg =
-      usuario?.rol !== 'almacen' &&
+      rol !== 'almacen' &&
       recoDateStr &&
       recoDateStr > todayStr &&
       recoDateStr !== todayStr;
@@ -634,7 +675,7 @@ export default function SolicitudesScreen() {
           <Text style={styles.cardTitle}>Folio: {s.folio}</Text>
           <EstadoBadge estado={isOverdue ? 'cancelada' : s.estado} />
         </View>
-        {usuario?.rol !== 'alumno' && s.nombre_alumno && (
+        {rol !== 'alumno' && s.nombre_alumno && (
           <Text style={styles.cardText}>Solicitante: {s.nombre_alumno}</Text>
         )}
         {s.profesor && <Text style={styles.cardText}>Encargado: {s.profesor}</Text>}
@@ -657,7 +698,7 @@ export default function SolicitudesScreen() {
           ))}
         </ScrollView>
         <View style={styles.actions}>
-          {usuario?.rol === 'docente' &&
+          {rol === 'docente' &&
             !s.isDocenteRequest &&
             s.estado === 'aprobación pendiente' && (
               <>
@@ -677,7 +718,7 @@ export default function SolicitudesScreen() {
                 </TouchableOpacity>
               </>
             )}
-          {usuario?.rol === 'almacen' &&
+          {rol === 'almacen' &&
             s.estado === 'entrega pendiente' &&
             (s.fecha_recoleccion || '').split('T')[0] === toLocalDateStr(new Date()) && (
               <TouchableOpacity
@@ -688,7 +729,7 @@ export default function SolicitudesScreen() {
                 <Text style={styles.btnText}>Entregar</Text>
               </TouchableOpacity>
             )}
-          {usuario?.rol === 'alumno' && s.estado === 'aprobación pendiente' && (
+          {rol === 'alumno' && s.estado === 'aprobación pendiente' && (
             <TouchableOpacity
               style={styles.btnGray}
               onPress={() => actualizarEstado(s.id, 'cancelar', 'cancelado')}
@@ -709,41 +750,88 @@ export default function SolicitudesScreen() {
     );
   };
 
-  if (loading || authLoading) {
+  // Mostrar loading solo si auth está cargando O si estamos cargando datos
+  if (authLoading || loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#003579" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#003579" />
+          <Text style={styles.loadingText}>
+            {authLoading ? 'Verificando usuario...' : 'Cargando solicitudes...'}
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
 
+  // Mostrar error si existe
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.errorText}>{error}</Text>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              setError('');
+              if (usuario) {
+                SecureStore.getItemAsync('token').then(token => {
+                  if (token) fetchAll(token);
+                });
+              }
+            }}
+          >
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
+
+  // Si no hay usuario después de cargar auth, no mostrar nada (ya se redirigió)
+  if (!usuario) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#003579" />
+          <Text style={styles.loadingText}>Redirigiendo...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Debug: Log del estado actual
+  console.log('Current state - rol:', rol, 'dataLoaded:', dataLoaded);
+  console.log('Data lengths - alumno:', alumnoData.length, 'docAprobar:', docAprobar.length, 'docMias:', docMias.length);
+  console.log('Almacen lengths - alumnos:', almAlumnos.length, 'docentes:', almDocentes.length);
 
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>{title}</Text>
+      
+      {/* Botones de pestañas */}
       {showButtons && (
         <View style={styles.buttonsContainer}>
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'alumnos' && styles.activeTab]}
             onPress={() => setActiveTab('alumnos')}
           >
-            <Text style={[styles.tabText, activeTab === 'alumnos' && { color: '#fff' }]}>Solicitudes de Alumnos</Text>
+            <Text style={[styles.tabText, activeTab === 'alumnos' && { color: '#fff' }]}>
+              {rol === 'docente' ? 'Solicitudes de Alumnos' : 'Solicitudes de Alumnos'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'docentes' && styles.activeTab]}
             onPress={() => setActiveTab('docentes')}
           >
-            <Text style={[styles.tabText, activeTab === 'docentes' && { color: '#fff' }]}>Solicitudes de Docentes</Text>
+            <Text style={[styles.tabText, activeTab === 'docentes' && { color: '#fff' }]}>
+              {rol === 'docente' ? 'Mis Solicitudes' : 'Solicitudes de Docentes'}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Campo de búsqueda */}
       {showSearch && (
         <TextInput
           style={styles.searchInput}
@@ -752,6 +840,8 @@ export default function SolicitudesScreen() {
           onChangeText={setSearch}
         />
       )}
+
+      {/* Filtro de fecha */}
       {showDateFilter && (
         <TouchableOpacity
           style={styles.dateFilter}
@@ -760,6 +850,7 @@ export default function SolicitudesScreen() {
           <Text>{filterDate ? formatFechaStr(filterDate) : 'Filtrar por fecha'}</Text>
         </TouchableOpacity>
       )}
+
       {showDatePicker && (
         <DateTimePicker
           value={new Date()}
@@ -770,7 +861,11 @@ export default function SolicitudesScreen() {
           maximumDate={new Date(maxFilterDate)}
         />
       )}
+
+      {/* Notificación */}
       {notice && <Text style={styles.notice}>{notice}</Text>}
+
+      {/* Lista de solicitudes */}
       <FlatList
         data={dataToShow}
         keyExtractor={(item) => item.id.toString()}
@@ -779,9 +874,25 @@ export default function SolicitudesScreen() {
           dataToShow.length ? styles.list : [styles.list, styles.emptyContainer]
         }
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No hay solicitudes para mostrar</Text>
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateTitle}>No hay solicitudes</Text>
+            <Text style={styles.emptyText}>
+              {rol === 'alumno' 
+                ? 'Aún no tienes solicitudes de préstamo.' 
+                : rol === 'docente'
+                ? (activeTab === 'alumnos' 
+                    ? 'No hay solicitudes de alumnos para aprobar.'
+                    : 'No tienes solicitudes como docente.')
+                : (activeTab === 'alumnos'
+                    ? 'No hay solicitudes de alumnos para entregar.'
+                    : 'No hay solicitudes de docentes para entregar.')
+              }
+            </Text>
+          </View>
         }
       />
+
+      {/* Modal de entrega */}
       {modalEntrega && (
         <Modal visible={!!modalEntrega} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
@@ -799,23 +910,25 @@ export default function SolicitudesScreen() {
                       size={24}
                       color="#003579"
                     />
-                    <Text>{item.cantidad} {getUnidad(item.tipo)} - {item.nombre_material}</Text>
+                    <Text style={styles.checkboxText}>
+                      {item.cantidad} {getUnidad(item.tipo)} - {item.nombre_material}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
               <TouchableOpacity style={styles.selectAll} onPress={seleccionarTodos}>
-                <Text>Seleccionar todo</Text>
+                <Text style={styles.selectAllText}>Seleccionar todo</Text>
               </TouchableOpacity>
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.btnSecondary} onPress={() => setModalEntrega(null)}>
-                  <Text>Cancelar</Text>
+                  <Text style={styles.btnSecondaryText}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.btnPrimary, selectedItems.length === 0 && styles.disabled]}
                   disabled={selectedItems.length === 0}
                   onPress={confirmarEntrega}
                 >
-                  <Text>Entregar</Text>
+                  <Text style={styles.btnPrimaryText}>Entregar</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -831,6 +944,41 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
     padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    gap: 16,
+  },
+  errorText: {
+    color: '#ef4444',
+    textAlign: 'center',
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  retryButton: {
+    backgroundColor: '#003579',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
   header: {
     fontSize: 24,
@@ -858,6 +1006,8 @@ const styles = StyleSheet.create({
   tabText: {
     color: '#000',
     fontWeight: '600',
+    fontSize: 13,
+    textAlign: 'center',
   },
   searchInput: {
     borderWidth: 1,
@@ -865,6 +1015,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
+    backgroundColor: 'white',
   },
   dateFilter: {
     borderWidth: 1,
@@ -873,6 +1024,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
     alignItems: 'center',
+    backgroundColor: 'white',
   },
   notice: {
     backgroundColor: '#FEF3C7',
@@ -884,14 +1036,27 @@ const styles = StyleSheet.create({
   list: {
     paddingBottom: 16,
   },
-   emptyContainer: {
+  emptyContainer: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  emptyStateContainer: {
+    alignItems: 'center',
+    padding: 40,
+    gap: 12,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginBottom: 8,
+  },
   emptyText: {
     color: '#6b7280',
     textAlign: 'center',
+    fontSize: 16,
+    lineHeight: 22,
   },
   card: {
     backgroundColor: '#fff',
@@ -953,6 +1118,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     marginTop: 16,
     gap: 8,
+    flexWrap: 'wrap',
   },
   btnGreen: {
     backgroundColor: '#16a34a',
@@ -982,6 +1148,7 @@ const styles = StyleSheet.create({
   btnText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: 12,
   },
   modalOverlay: {
     flex: 1,
@@ -1005,32 +1172,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
+    gap: 8,
+  },
+  checkboxText: {
+    flex: 1,
+    fontSize: 14,
   },
   selectAll: {
     alignItems: 'center',
     marginVertical: 8,
+    padding: 8,
+  },
+  selectAllText: {
+    color: '#003579',
+    fontWeight: '600',
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 8,
+    marginTop: 16,
   },
   btnSecondary: {
     padding: 12,
     backgroundColor: '#e5e7eb',
     borderRadius: 8,
   },
+  btnSecondaryText: {
+    color: '#374151',
+    fontWeight: '600',
+  },
   btnPrimary: {
     padding: 12,
     backgroundColor: '#003579',
     borderRadius: 8,
   },
+  btnPrimaryText: {
+    color: 'white',
+    fontWeight: '600',
+  },
   disabled: {
     opacity: 0.5,
-  },
-  errorText: {
-    color: '#ef4444',
-    textAlign: 'center',
-    marginTop: 20,
   },
 });
