@@ -93,8 +93,8 @@ function normalizarAdeudo(a: RawAdeudo): Adeudo {
 // Date parsing and formatting
 const parseDate = (str: string | null): Date | null => {
   if (!str) return null;
-  const [y, m, d] = str.split('T')[0].split('-');
-  const date = new Date(Number(y), Number(m) - 1, Number(d));
+ const normalized = str.replace(' ', 'T');
+  const date = new Date(normalized);
   return isNaN(date.getTime()) ? null : date;
 };
 

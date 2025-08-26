@@ -175,12 +175,22 @@ export default function ChatScreen() {
       setPermisos(data);
     } catch (err: any) {
       console.error('[Chat] verificarPermisosChat:', err);
-      if (err.response?.status === 401) {
+    if (!err.response) {
+        // Error de red o servidor inaccesible
+        if (usuario?.rol === 'alumno') {
+          // Los alumnos siempre tienen acceso al chat
+          setPermisos({ acceso_chat: true, rol: usuario.rol });
+        } else {
+          setPermisos({ acceso_chat: false, rol: usuario?.rol || 'desconocido' });
+          setError('No se pudo verificar permisos de chat');
+        }
+      } else if (err.response?.status === 401) {
         setError('Sesión expirada. Inicia sesión nuevamente');
         await SecureStore.deleteItemAsync('token');
         router.push('/login');
       } else if (err.response?.status === 403) {
         setError('No tienes permisos para acceder al chat');
+         setPermisos({ acceso_chat: false, rol: usuario?.rol || 'desconocido' });
       } else {
         setError(err.response?.data?.error || 'Error al verificar permisos');
       }
@@ -411,16 +421,19 @@ export default function ChatScreen() {
 
   // Mostrar mensaje de acceso denegado si no tiene permisos
   if (!permisos || !permisos.acceso_chat) {
+    if (permisos?.rol === 'almacen') {
+      return (
+        <View style={styles.noAccessContainer}>
+          <Text style={styles.noAccessText}>Sin acceso, contacta al administrador</Text>
+        </View>
+      );
+    }
+
     return (
       <LinearGradient colors={['#f3f4f6', '#f3f4f6']} style={styles.container}>
         <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
         <Text style={styles.errorTitle}>Acceso Denegado</Text>
         <Text style={styles.errorText}>{error || 'No tienes permisos para acceder al chat'}</Text>
-        {permisos && permisos.rol === 'almacen' && (
-          <Text style={styles.errorSubText}>
-            Contacta al administrador para solicitar permisos de chat.
-          </Text>
-        )}
       </LinearGradient>
     );
   }
@@ -608,6 +621,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     color: '#6b7280',
+    textAlign: 'center',
+  },
+  noAccessContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    padding: 20,
+  },
+  noAccessText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
     textAlign: 'center',
   },
   contactRole: {
