@@ -12,7 +12,6 @@ import {
   useWindowDimensions,
   SafeAreaView,
 } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Print from 'expo-print';
@@ -365,11 +364,14 @@ export default function ReportesScreen() {
                   <Text style={styles.noData}>No hay registros.</Text>
                 ) : (
                   <>
-                    <FlatList
-                      data={filteredHistorial.slice(0, 5)}
-                      keyExtractor={(_, idx) => idx.toString()}
-                      renderItem={({ item: h }) => (
-                        <View style={styles.tableRow}>
+                    <View>
+                      <View style={styles.tableHeader}>
+                        <Text style={styles.tableHeaderCell}>Nombre</Text>
+                        <Text style={styles.tableHeaderCell}>Grupo</Text>
+                        <Text style={styles.tableHeaderCell}>Acciones</Text>
+                      </View>
+                      {filteredHistorial.slice(0, 5).map((h, idx) => (
+                        <View style={styles.tableRow} key={idx}>
                           <Text style={styles.tableCell}>{h.nombre}</Text>
                           <Text style={styles.tableCell}>{h.grupo}</Text>
                           <View style={styles.actionButtons}>
@@ -381,15 +383,8 @@ export default function ReportesScreen() {
                             </TouchableOpacity>
                           </View>
                         </View>
-                      )}
-                      ListHeaderComponent={
-                        <View style={styles.tableHeader}>
-                          <Text style={styles.tableHeaderCell}>Nombre</Text>
-                          <Text style={styles.tableHeaderCell}>Grupo</Text>
-                          <Text style={styles.tableHeaderCell}>Acciones</Text>
-                        </View>
-                      }
-                    />
+                        ))}
+                    </View>
                     {filteredHistorial.length > 5 && (
                       <TouchableOpacity style={styles.showMore} onPress={() => setShowHistorialModal(true)}>
                         <Text style={styles.showMoreText}>Mostrar más</Text>
@@ -406,20 +401,20 @@ export default function ReportesScreen() {
                   <Text style={styles.noData}>No hay grupos.</Text>
                 ) : (
                   <>
-                    <FlatList
-                      data={grupos.slice(0, 5)}
-                      keyExtractor={(_, idx) => idx.toString()}
-                      renderItem={({ item: g }) => (
-                        <TouchableOpacity style={styles.tableRow} onPress={() => setGrupoDetalle(g)}>
+                    <View>
+                      <View style={styles.tableHeader}>
+                        <Text style={styles.tableHeaderCell}>Nombre</Text>
+                      </View>
+                      {grupos.slice(0, 5).map((g, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          style={styles.tableRow}
+                          onPress={() => setGrupoDetalle(g)}
+                        >
                           <Text style={styles.tableCell}>{g.nombre}</Text>
                         </TouchableOpacity>
-                      )}
-                      ListHeaderComponent={
-                        <View style={styles.tableHeader}>
-                          <Text style={styles.tableHeaderCell}>Nombre</Text>
-                        </View>
-                      }
-                    />
+                       ))}
+                    </View>
                     {grupos.length > 5 && (
                       <TouchableOpacity style={styles.showMore} onPress={() => setShowGruposModal(true)}>
                         <Text style={styles.showMoreText}>Mostrar más</Text>
@@ -446,26 +441,27 @@ export default function ReportesScreen() {
                     <Text style={styles.noData}>Sin adeudos</Text>
                   ) : (
                     <>
-                      <FlatList
-                        data={grupoDetalle.adeudos.slice(0, 5)}
-                        keyExtractor={(_, idx) => idx.toString()}
-                        renderItem={({ item: a }) => (
-                          <View style={styles.tableRow}>
-                            <Text style={styles.tableCell}>{a.cantidad} {a.unidad}</Text>
+                     <View>
+                        <View style={styles.tableHeader}>
+                          <Text style={styles.tableHeaderCell}>Cantidad</Text>
+                          <Text style={styles.tableHeaderCell}>Material</Text>
+                          <Text style={styles.tableHeaderCell}>Solicitante</Text>
+                        </View>
+                        {grupoDetalle.adeudos.slice(0, 5).map((a, idx) => (
+                          <View style={styles.tableRow} key={idx}>
+                            <Text style={styles.tableCell}>
+                              {a.cantidad} {a.unidad}
+                            </Text>
                             <Text style={styles.tableCell}>{a.nombre_material}</Text>
                             <Text style={styles.tableCell}>{a.solicitante}</Text>
                           </View>
-                        )}
-                        ListHeaderComponent={
-                          <View style={styles.tableHeader}>
-                            <Text style={styles.tableHeaderCell}>Cantidad</Text>
-                            <Text style={styles.tableHeaderCell}>Material</Text>
-                            <Text style={styles.tableHeaderCell}>Solicitante</Text>
-                          </View>
-                        }
-                      />
+                      ))}
+                      </View>
                       {grupoDetalle.adeudos.length > 5 && (
-                        <TouchableOpacity style={styles.showMore} onPress={() => setShowGrupoAdeudosModal(true)}>
+                       <TouchableOpacity
+                          style={styles.showMore}
+                          onPress={() => setShowGrupoAdeudosModal(true)}
+                        >
                           <Text style={styles.showMoreText}>Ver más</Text>
                         </TouchableOpacity>
                       )}
@@ -496,36 +492,38 @@ export default function ReportesScreen() {
               ) : (
                 <>
                   <ScrollView horizontal>
-                    <FlatList
-                      data={filteredLiquidos.slice(0, 5)}
-                      keyExtractor={(_, idx) => idx.toString()}
-                      renderItem={({ item: r }) => (
-                        <View style={styles.tableRow}>
+                    <View>
+                      <View style={styles.tableHeader}>
+                        <Text style={styles.tableHeaderCell}>Reactivo</Text>
+                        <Text style={styles.tableHeaderCell}>Cantidad</Text>
+                        {inventarioLiquidos.meses.map((m) => (
+                          <Text key={m} style={styles.tableHeaderCell}>
+                            {m}
+                          </Text>
+                        ))}
+                        <Text style={styles.tableHeaderCell}>Existencia Final</Text>
+                        <Text style={styles.tableHeaderCell}>Total</Text>
+                      </View>
+                      {filteredLiquidos.slice(0, 5).map((r, idx) => (
+                        <View style={styles.tableRow} key={idx}>
                           <Text style={styles.tableCell}>{r.nombre.replace(/_/g, ' ')}</Text>
-                          <Text style={styles.tableCell}>{r.cantidad_inicial} {r.unidad}</Text>
+                          <Text style={styles.tableCell}>
+                            {r.cantidad_inicial} {r.unidad}
+                          </Text>
                           {inventarioLiquidos.meses.map((m) => (
                             <Text key={m} style={styles.tableCell}>
                               {r.consumos[m] || 0}
                             </Text>
                           ))}
-                          <Text style={styles.tableCell}>{r.existencia_final} {r.unidad}</Text>
-                          <Text style={styles.tableCell}>{r.total_consumido} {r.unidad}</Text>
+                         <Text style={styles.tableCell}>
+                            {r.existencia_final} {r.unidad}
+                          </Text>
+                          <Text style={styles.tableCell}>
+                            {r.total_consumido} {r.unidad}
+                          </Text>
                         </View>
-                      )}
-                      ListHeaderComponent={
-                        <View style={styles.tableHeader}>
-                          <Text style={styles.tableHeaderCell}>Reactivo</Text>
-                          <Text style={styles.tableHeaderCell}>Cantidad</Text>
-                          {inventarioLiquidos.meses.map((m) => (
-                            <Text key={m} style={styles.tableHeaderCell}>
-                              {m}
-                            </Text>
-                          ))}
-                          <Text style={styles.tableHeaderCell}>Existencia Final</Text>
-                          <Text style={styles.tableHeaderCell}>Total</Text>
-                        </View>
-                      }
-                    />
+                     ))}
+                    </View>
                   </ScrollView>
                   {filteredLiquidos.length > 5 && (
                     <TouchableOpacity style={styles.showMore} onPress={() => setShowLiquidosModal(true)}>
@@ -555,36 +553,38 @@ export default function ReportesScreen() {
               ) : (
                 <>
                   <ScrollView horizontal>
-                    <FlatList
-                      data={filteredSolidos.slice(0, 5)}
-                      keyExtractor={(_, idx) => idx.toString()}
-                      renderItem={({ item: r }) => (
-                        <View style={styles.tableRow}>
+                    <View>
+                      <View style={styles.tableHeader}>
+                        <Text style={styles.tableHeaderCell}>Reactivo</Text>
+                        <Text style={styles.tableHeaderCell}>Cantidad</Text>
+                        {inventarioSolidos.meses.map((m) => (
+                          <Text key={m} style={styles.tableHeaderCell}>
+                            {m}
+                          </Text>
+                        ))}
+                        <Text style={styles.tableHeaderCell}>Existencia Final</Text>
+                        <Text style={styles.tableHeaderCell}>Total</Text>
+                      </View>
+                      {filteredSolidos.slice(0, 5).map((r, idx) => (
+                        <View style={styles.tableRow} key={idx}>
                           <Text style={styles.tableCell}>{r.nombre.replace(/_/g, ' ')}</Text>
-                          <Text style={styles.tableCell}>{r.cantidad_inicial} {r.unidad}</Text>
+                         <Text style={styles.tableCell}>
+                            {r.cantidad_inicial} {r.unidad}
+                          </Text>
                           {inventarioSolidos.meses.map((m) => (
                             <Text key={m} style={styles.tableCell}>
                               {r.consumos[m] || 0}
                             </Text>
                           ))}
-                          <Text style={styles.tableCell}>{r.existencia_final} {r.unidad}</Text>
-                          <Text style={styles.tableCell}>{r.total_consumido} {r.unidad}</Text>
+                        <Text style={styles.tableCell}>
+                            {r.existencia_final} {r.unidad}
+                          </Text>
+                          <Text style={styles.tableCell}>
+                            {r.total_consumido} {r.unidad}
+                          </Text>
                         </View>
-                      )}
-                      ListHeaderComponent={
-                        <View style={styles.tableHeader}>
-                          <Text style={styles.tableHeaderCell}>Reactivo</Text>
-                          <Text style={styles.tableHeaderCell}>Cantidad</Text>
-                          {inventarioSolidos.meses.map((m) => (
-                            <Text key={m} style={styles.tableHeaderCell}>
-                              {m}
-                            </Text>
-                          ))}
-                          <Text style={styles.tableHeaderCell}>Existencia Final</Text>
-                          <Text style={styles.tableHeaderCell}>Total</Text>
-                        </View>
-                      }
-                    />
+                      ))}
+                    </View>
                   </ScrollView>
                   {filteredSolidos.length > 5 && (
                     <TouchableOpacity style={styles.showMore} onPress={() => setShowSolidosModal(true)}>

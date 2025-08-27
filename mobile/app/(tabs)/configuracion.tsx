@@ -493,11 +493,29 @@ export default function ConfiguracionScreen() {
     }
   };
 
-   if (!API_URL) {
+   useEffect(() => {
+    if (!API_URL) {
       mostrarMensaje('error', 'API_URL no configurada');
-      return;
     }
-    
+      }, []);
+
+  if (!API_URL) {
+    return (
+      <LinearGradient
+        colors={['#f9fafb', '#f3f4f6']}
+        style={styles.container}
+      >
+        <View style={styles.deniedContainer}>
+          <View style={styles.deniedIcon}>
+            <Ionicons name="alert-circle-outline" size={32} color="#ef4444" />
+          </View>
+          <Text style={styles.deniedTitle}>Configuración inválida</Text>
+          <Text style={styles.deniedText}>API_URL no configurada</Text>
+        </View>
+      </LinearGradient>
+    );
+  }
+  
   useEffect(() => {
     if (usuario && usuario.rol_id === 4) {
       cargarUsuariosAlmacen();
