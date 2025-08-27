@@ -709,8 +709,7 @@ export default function ConfiguracionScreen() {
                       })}
                     </View>
                   </View>
-                </View>
-
+ 
                 <TouchableOpacity
                   style={styles.submitButton}
                   onPress={agregarUsuario}
