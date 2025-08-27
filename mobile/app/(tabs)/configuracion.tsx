@@ -67,7 +67,6 @@ export default function ConfiguracionScreen() {
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
   const [vistaActiva, setVistaActiva] = useState('crear');
-  const [searchTerm, setSearchTerm] = useState('');
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState('');
   const [searchGrupo, setSearchGrupo] = useState('');
@@ -428,13 +427,6 @@ export default function ConfiguracionScreen() {
     setTimeout(() => setMensaje({ tipo: '', texto: '' }), 5000);
   };
 
-  // Filtrar usuarios
-  const usuariosFiltrados = todosUsuarios.filter((usuario) =>
-    usuario.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    usuario.correo_institucional.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    usuario.rol.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const usuariosPorGrupo = todosUsuarios.filter(
     (u) => grupoSeleccionado && u.grupo_id === parseInt(grupoSeleccionado)
   );
@@ -536,7 +528,6 @@ export default function ConfiguracionScreen() {
   const tabs = [
     { id: 'crear', name: 'Crear Usuario', icon: 'person-add-outline' },
     { id: 'almacen', name: 'Personal Almacén', icon: 'business-outline' },
-    { id: 'usuarios', name: 'Todos los Usuarios', icon: 'people-outline' },
     { id: 'acciones', name: 'Acciones', icon: 'settings-outline' },
     { id: 'ajustes', name: 'Ajuste Masivo de Usuarios', icon: 'trash-outline' },
   ];
@@ -797,102 +788,6 @@ export default function ConfiguracionScreen() {
                         </View>
                       </View>
                      ))}
-                  </View>
-                )}
-              </View>
-            )}
-
-            {vistaActiva === 'usuarios' && (
-              <View style={styles.section}>
-                <View style={styles.sectionIcon}>
-                  <Ionicons name="people-outline" size={24} color="#ffffff" />
-                </View>
-                <Text style={styles.sectionTitle}>Todos los Usuarios</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Lista completa de usuarios del sistema ({todosUsuarios.length} usuarios)
-                </Text>
-
-                <View style={styles.searchContainer}>
-                  <Ionicons name="search-outline" size={20} color="#6b7280" style={styles.searchIcon} />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Buscar usuarios por nombre, email o rol..."
-                    value={searchTerm}
-                    onChangeText={setSearchTerm}
-                  />
-                </View>
-
-                 {usuariosFiltrados.length === 0 ? (
-                  <View style={styles.emptyContainer}>
-                    <Ionicons name="search-outline" size={48} color="#94a3b8" />
-                    <Text style={styles.emptyTitle}>No se encontraron usuarios</Text>
-                  </View>
-                ) : (
-                  <View style={styles.listContent}>
-                    {usuariosFiltrados.map((user) => (
-                      <View key={user.id} style={styles.userRow}>
-                        <View style={styles.userHeader}>
-                          <View style={styles.userAvatar}>
-                            <Text style={styles.avatarText}>{user.nombre.charAt(0).toUpperCase()}</Text>
-                          </View>
-                          <View style={styles.userInfo}>
-                            <Text style={styles.userName}>{user.nombre}</Text>
-                            <Text style={styles.userEmail}>{user.correo_institucional}</Text>
-                            {user.rol.toLowerCase() === 'estudiante' && (
-                              <View style={styles.userStats}>
-                                <Text style={styles.statBadge}>
-                                  {user.solicitudes_count || 0} solicitudes
-                                </Text>
-                                <Text style={styles.statBadge}>
-                                  {user.entregas_count || 0} entregas
-                                </Text>
-                              </View>
-                            )}
-                            {user.rol.toLowerCase() === 'docente' && (
-                              <View style={styles.userStats}>
-                                <Text style={styles.statBadge}>
-                                  {user.entregas_count || 0} reactivos
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                        </View>
-                        <View
-                          style={[
-                            styles.roleBadge,
-                            getRolColor(user.rol),
-                          ]}
-                        >
-                          <Text style={styles.roleText}>
-                            {user.rol.charAt(0).toUpperCase() + user.rol.slice(1)}
-                          </Text>
-                        </View>
-                        <View
-                          style={[
-                            styles.statusBadge,
-                            user.activo ? styles.activeStatus : styles.blockedStatus,
-                          ]}
-                        >
-                          <View
-                            style={[
-                              styles.statusDot,
-                              user.activo ? styles.activeDot : styles.blockedDot,
-                            ]}
-                          />
-                          <Text style={styles.statusText}>
-                            {user.activo ? 'Activo' : 'Bloqueado'}
-                          </Text>
-                        </View>
-                        <View style={styles.permissions}>
-                          {user.acceso_chat && (
-                            <Text style={styles.permissionBadge}>Chat</Text>
-                          )}
-                          {user.modificar_stock && (
-                            <Text style={styles.permissionBadge}>Stock</Text>
-                          )}
-                        </View>
-                      </View>
-                 ))}
                   </View>
                 )}
               </View>

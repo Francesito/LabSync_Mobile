@@ -266,37 +266,37 @@ export default function HistorialScreen() {
                       <View style={styles.tableRow}>
                         <Text
                           key="folio"
-                          style={[styles.tableCell, { minWidth: width * 0.15 }]}
+                         style={[styles.tableCell, { width: width * 0.15 }]}
                         >
                           {item.folio}
                         </Text>
                         <Text
                           key="solicitante"
-                          style={[styles.tableCell, { minWidth: width * 0.25 }]}
+                        style={[styles.tableCell, { width: width * 0.25 }]}
                         >
                           {item.nombre_display || item.solicitante}
                         </Text>
                         <Text
                           key="encargado"
-                          style={[styles.tableCell, { minWidth: width * 0.25 }]}
+                          style={[styles.tableCell, { width: width * 0.25 }]}
                         >
                           {item.encargado}
                         </Text>
                         <Text
                           key="recoleccion"
-                          style={[styles.tableCell, { minWidth: width * 0.2 }]}
+                          style={[styles.tableCell, { width: width * 0.2 }]}
                         >
                           {formatearFecha(item.fecha_recoleccion)}
                         </Text>
                         <Text
                           key="devolucion"
-                          style={[styles.tableCell, { minWidth: width * 0.2 }]}
+                         style={[styles.tableCell, { width: width * 0.2 }]}
                         >
                           {formatearFecha(item.fecha_devolucion)}
                         </Text>
                         <View
                           key="estado"
-                          style={[styles.tableCell, { minWidth: width * 0.2 }]}
+                          style={[styles.tableCell, { width: width * 0.2 }]}
                         >
                           <View style={[styles.badge, getEstadoBadgeStyle(item.estado)]}>
                             <Text style={styles.badgeText}>{item.estado}</Text>
@@ -304,8 +304,7 @@ export default function HistorialScreen() {
                         </View>
                         <Text
                           key="materiales"
-                          style={[styles.tableCell, { minWidth: width * 0.3 }]}
-                          numberOfLines={2}
+                         style={[styles.tableCell, { width: width * 0.3 }]}
                         >
                           {item.materiales || 'Sin materiales'}
                         </Text>
@@ -315,43 +314,43 @@ export default function HistorialScreen() {
                       <View style={styles.tableHeader}>
                         <Text
                           key="folio"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.15 }]}
+                         style={[styles.tableHeaderCell, { width: width * 0.15 }]}
                         >
                           Folio
                         </Text>
                         <Text
                           key="solicitante"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.25 }]}
+                           style={[styles.tableHeaderCell, { width: width * 0.25 }]}
                         >
                           Solicitante
                         </Text>
                         <Text
                           key="encargado"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.25 }]}
+                         style={[styles.tableHeaderCell, { width: width * 0.25 }]}
                         >
                           Encargado
                         </Text>
                         <Text
                           key="recoleccion"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.2 }]}
+                          style={[styles.tableHeaderCell, { width: width * 0.2 }]}
                         >
                           Recolección
                         </Text>
                         <Text
                           key="devolucion"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.2 }]}
+                         style={[styles.tableHeaderCell, { width: width * 0.2 }]}
                         >
                           Devolución
                         </Text>
                         <Text
                           key="estado"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.2 }]}
+                          style={[styles.tableHeaderCell, { width: width * 0.2 }]}
                         >
                           Estado
                         </Text>
                         <Text
                           key="materiales"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.3 }]}
+                          style={[styles.tableHeaderCell, { width: width * 0.3 }]}
                         >
                           Materiales
                         </Text>
@@ -393,19 +392,19 @@ export default function HistorialScreen() {
                       <View style={styles.tableRow}>
                         <Text
                           key="material"
-                          style={[styles.tableCell, { minWidth: width * 0.25 }]}
+                         style={[styles.tableCell, { width: width * 0.25 }]}
                         >
                           {item.nombre_material || 'Material Desconocido'}
                         </Text>
                         <Text
                           key="tipo"
-                          style={[styles.tableCell, { minWidth: width * 0.15, textTransform: 'capitalize' }]}
+                           style={[styles.tableCell, { width: width * 0.15, textTransform: 'capitalize' }]}
                         >
                           {item.tipo}
                         </Text>
                         <Text
                           key="movimiento"
-                          style={[styles.tableCell, { minWidth: width * 0.2, textTransform: 'capitalize' }]}
+                          style={[styles.tableCell, { width: width * 0.2, textTransform: 'capitalize' }]}
                         >
                           {item.tipo_movimiento}
                         </Text>
@@ -413,26 +412,26 @@ export default function HistorialScreen() {
                           key="cantidad"
                           style={[
                             styles.tableCell,
-                            { minWidth: width * 0.15, color: item.cantidad > 0 ? '#16a34a' : '#dc2626' },
+                            { width: width * 0.15, color: item.cantidad > 0 ? '#16a34a' : '#dc2626' },
                           ]}
                         >
                           {item.cantidad > 0 ? '+' : ''}{item.cantidad} {item.unidad}
                         </Text>
                         <Text
                           key="stock"
-                          style={[styles.tableCell, { minWidth: width * 0.15 }]}
+                          style={[styles.tableCell, { width: width * 0.15 }]}
                         >
                           {item.stock_actual} {item.unidad}
                         </Text>
                         <Text
                           key="usuario"
-                          style={[styles.tableCell, { minWidth: width * 0.25 }]}
+                          style={[styles.tableCell, { width: width * 0.25 }]}
                         >
                           {item.usuario || 'Sistema'}
                         </Text>
                         <Text
                           key="fecha"
-                          style={[styles.tableCell, { minWidth: width * 0.2 }]}
+                         style={[styles.tableCell, { width: width * 0.2 }]}
                         >
                           {formatearFecha(item.fecha_movimiento)}
                         </Text>
@@ -442,43 +441,43 @@ export default function HistorialScreen() {
                       <View style={styles.tableHeader}>
                         <Text
                           key="material"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.25 }]}
+                          style={[styles.tableHeaderCell, { width: width * 0.25 }]}
                         >
                           Material
                         </Text>
                         <Text
                           key="tipo"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.15 }]}
+                          style={[styles.tableHeaderCell, { width: width * 0.15 }]}
                         >
                           Tipo
                         </Text>
                         <Text
                           key="movimiento"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.2 }]}
+                          style={[styles.tableHeaderCell, { width: width * 0.2 }]}
                         >
                           Movimiento
                         </Text>
                         <Text
                           key="cantidad"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.15 }]}
+                          style={[styles.tableHeaderCell, { width: width * 0.15 }]}
                         >
                           Cantidad
                         </Text>
                         <Text
                           key="stock"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.15 }]}
+                           style={[styles.tableHeaderCell, { width: width * 0.15 }]}
                         >
                           Stock Actual
                         </Text>
                         <Text
                           key="usuario"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.25 }]}
+                        style={[styles.tableHeaderCell, { width: width * 0.25 }]}
                         >
                           Usuario
                         </Text>
                         <Text
                           key="fecha"
-                          style={[styles.tableHeaderCell, { minWidth: width * 0.2 }]}
+                          style={[styles.tableHeaderCell, { width: width * 0.2 }]}
                         >
                           Fecha
                         </Text>
@@ -648,11 +647,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#ffffff', // text-white
-    textAlign: 'center',
+   textAlign: 'left',
     padding: 12,
   },
   tableRow: {
     flexDirection: 'row',
+     alignItems: 'flex-start',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb', // divide-gray-200
@@ -661,8 +661,10 @@ const styles = StyleSheet.create({
   tableCell: {
     fontSize: 12,
     color: '#374151', // text-gray-900
-    textAlign: 'center',
+    textAlign: 'left',
     padding: 12,
+     flexShrink: 1,
+    flexWrap: 'wrap',
   },
   badge: {
     paddingVertical: 4,

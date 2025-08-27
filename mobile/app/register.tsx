@@ -8,12 +8,11 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
+   ImageBackground,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
-// eslint-disable-next-line import/no-unresolved
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../constants/api';
 
@@ -67,11 +66,12 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={['#e6f7ec', '#ffffff']}
-        style={styles.container}
-      >
+    <ImageBackground
+      source={require('../assets/fondo1.png')}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safeArea}>
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -203,8 +203,8 @@ export default function RegisterScreen() {
             </Text>
           </View>
         </ScrollView>
-      </LinearGradient>
-    </SafeAreaView>
+        </SafeAreaView>
+    </ImageBackground>
   );
 }
 

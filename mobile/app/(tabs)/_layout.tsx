@@ -147,7 +147,15 @@ if (!isReady) {
         options={{
          href: roleId !== null && [1, 2, 3].includes(roleId) ? undefined : null,
           title: 'Notificaciones',
-          tabBarIcon: ({ color }) => <Ionicons name="notifications" size={28} color={color} />,
+            tabBarIcon: ({ color }) => <Ionicons name="notifications" size={28} color={color} />, 
+        }}
+      />
+
+      <Tabs.Screen
+        name="logout"
+        options={{
+          title: 'Salir',
+          tabBarIcon: ({ color }) => <Ionicons name="exit-outline" size={28} color={color} />,
         }}
       />
     </Tabs>

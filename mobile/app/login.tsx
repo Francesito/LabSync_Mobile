@@ -5,13 +5,12 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
+    ImageBackground,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
-// eslint-disable-next-line import/no-unresolved
-import { LinearGradient } from 'expo-linear-gradient';
 import { API_URL } from '../constants/api';
 
 export default function LoginScreen() {
@@ -49,9 +48,10 @@ export default function LoginScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={['#e6f7ec', '#ffffff']}
+    <ImageBackground
+      source={require('../assets/fondo1.png')}
       style={styles.container}
+        resizeMode="cover"
     >
       <View style={styles.formContainer}>
         <Text style={styles.title}>Inicia Sesión</Text>
@@ -127,7 +127,7 @@ export default function LoginScreen() {
           </Link>
         </Text>
       </View>
-    </LinearGradient>
+    </ImageBackground>
   );
 }
 
