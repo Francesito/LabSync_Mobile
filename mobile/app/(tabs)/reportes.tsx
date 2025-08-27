@@ -812,7 +812,6 @@ export default function ReportesScreen() {
           </View>
         </View>
       </Modal>
-    </LinearGradient>
   </SafeAreaView>
   );
 }

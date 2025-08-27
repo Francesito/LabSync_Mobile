@@ -18,7 +18,7 @@ import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
-import { useAuth } from '@/lib/auth'; // Adjust path as needed
+import { useAuth } from '../../lib/auth'; // Adjust path as needed
 
 // Interfaces
 interface Usuario {
@@ -45,6 +45,9 @@ interface Grupo {
 }
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL; // Use EXPO_PUBLIC_ for Expo env vars
+if (!API_URL) {
+  console.warn('EXPO_PUBLIC_API_URL no está definida. Verifica tu archivo .env');
+}
 
 const roles = [
   { id: 2, nombre: 'docente' },
@@ -490,6 +493,11 @@ export default function ConfiguracionScreen() {
     }
   };
 
+   if (!API_URL) {
+      mostrarMensaje('error', 'API_URL no configurada');
+      return;
+    }
+    
   useEffect(() => {
     if (usuario && usuario.rol_id === 4) {
       cargarUsuariosAlmacen();

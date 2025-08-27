@@ -63,6 +63,33 @@ export async function obtenerGrupos(): Promise<any[]> {
   return data;
 }
 
+export async function obtenerAdeudosGlobal(): Promise<any[]> {
+  const token = await SecureStore.getItemAsync('token');
+  if (!token) throw new Error('No hay token de autenticación');
+  const { data } = await API.get('/adeudos', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return data;
+}
+
+export async function obtenerInventarioLiquidos(): Promise<any> {
+  const token = await SecureStore.getItemAsync('token');
+  if (!token) throw new Error('No hay token de autenticación');
+  const { data } = await API.get('/materials/inventario/liquidos', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return data;
+}
+
+export async function obtenerInventarioSolidos(): Promise<any> {
+  const token = await SecureStore.getItemAsync('token');
+  if (!token) throw new Error('No hay token de autenticación');
+  const { data } = await API.get('/materials/inventario/solidos', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return data;
+}
+
 // ======================= RESIDUOS (Tipos + Utils + API) =======================
 
 // Enums del esquema MySQL
@@ -89,6 +116,8 @@ export interface Residuo {
   tipo: TipoResiduo;
   cantidad: number;       // decimal(10,2) -> number
   unidad: UnidadResiduo;
+   nombre?: string;
+  grupo?: string;
 }
 
 // Payload para crear (usuario_id/fecha pueden inferirse por backend si así lo implementaste)
@@ -122,6 +151,8 @@ function normalizeResiduoRow(row: any): Residuo {
     tipo: row.tipo as TipoResiduo,
     cantidad: Number(row.cantidad),
     unidad: row.unidad as UnidadResiduo,
+    nombre: row.nombre ? String(row.nombre) : undefined,
+    grupo: row.grupo ? String(row.grupo) : undefined,
   };
 }
 
