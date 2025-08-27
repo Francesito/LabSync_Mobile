@@ -376,15 +376,15 @@ export default function ReportesScreen() {
                 <>
                   <View>
                     <View style={[styles.tableHeader, { backgroundColor: '#3b82f6' }]}>
-                      <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Nombre</Text>
-                      <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Grupo</Text>
-                      <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Acciones</Text>
+                      <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Nombre</Text>
+                      <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Grupo</Text>
+                      <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Acciones</Text>
                     </View>
                     {filteredHistorial.slice(0, 5).map((h, idx) => (
-                      <View style={styles.tableRow} key={idx}>
-                        <Text style={styles.tableCell}>{h.nombre}</Text>
-                        <Text style={styles.tableCell}>{h.grupo}</Text>
-                        <View style={styles.actionButtons}>
+                      <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
+                        <Text style={[styles.tableCell, { minWidth: 150 }]}>{h.nombre}</Text>
+                        <Text style={[styles.tableCell, { minWidth: 100 }]}>{h.grupo}</Text>
+                        <View style={[styles.actionButtons, { minWidth: 100 }]}>
                           <TouchableOpacity onPress={() => downloadHistorialCSV(h.registros, h.nombre)}>
                             <Ionicons name="download-outline" size={20} color="#3b82f6" />
                           </TouchableOpacity>
@@ -422,15 +422,15 @@ export default function ReportesScreen() {
                 <>
                   <View>
                     <View style={[styles.tableHeader, { backgroundColor: '#14b8a6' }]}>
-                      <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Nombre</Text>
+                      <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Nombre</Text>
                     </View>
                     {grupos.slice(0, 5).map((g, idx) => (
                       <TouchableOpacity
                         key={idx}
-                        style={[styles.tableRow, grupoDetalle?.nombre === g.nombre ? styles.tableRowActive : null]}
+                        style={[styles.tableRow, grupoDetalle?.nombre === g.nombre ? styles.tableRowActive : null, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]}
                         onPress={() => setGrupoDetalle(g)}
                       >
-                        <Text style={styles.tableCell}>{g.nombre}</Text>
+                        <Text style={[styles.tableCell, { minWidth: 150 }]}>{g.nombre}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -469,15 +469,15 @@ export default function ReportesScreen() {
                   <>
                     <View>
                       <View style={[styles.tableHeader, { backgroundColor: '#14b8a6' }]}>
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Cantidad</Text>
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Material</Text>
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Solicitante</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Cantidad</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Material</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Solicitante</Text>
                       </View>
                       {grupoDetalle.adeudos.slice(0, 5).map((a, idx) => (
-                        <View style={styles.tableRow} key={idx}>
-                          <Text style={styles.tableCell}>{a.cantidad} {a.unidad}</Text>
-                          <Text style={styles.tableCell}>{a.nombre_material}</Text>
-                          <Text style={styles.tableCell}>{a.solicitante}</Text>
+                        <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
+                          <Text style={[styles.tableCell, { minWidth: 100 }]}>{a.cantidad} {a.unidad}</Text>
+                          <Text style={[styles.tableCell, { minWidth: 150 }]}>{a.nombre_material}</Text>
+                          <Text style={[styles.tableCell, { minWidth: 150 }]}>{a.solicitante}</Text>
                         </View>
                       ))}
                     </View>
@@ -526,27 +526,27 @@ export default function ReportesScreen() {
                   <ScrollView horizontal>
                     <View>
                       <View style={[styles.tableHeader, { backgroundColor: '#06b6d4' }]}>
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Reactivo</Text>
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Cantidad</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Reactivo</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Cantidad</Text>
                         {inventarioLiquidos.meses.map((m) => (
-                          <Text key={m} style={[styles.tableHeaderCell, { color: '#ffffff' }]}>
+                          <Text key={m} style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>
                             {m}
                           </Text>
                         ))}
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Existencia Final</Text>
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Total</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Existencia Final</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Total</Text>
                       </View>
                       {filteredLiquidos.slice(0, 5).map((r, idx) => (
-                        <View style={styles.tableRow} key={idx}>
-                          <Text style={styles.tableCell}>{r.nombre.replace(/_/g, ' ')}</Text>
-                          <Text style={styles.tableCell}>{r.cantidad_inicial} {r.unidad}</Text>
+                        <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
+                          <Text style={[styles.tableCell, { minWidth: 150 }]}>{r.nombre.replace(/_/g, ' ')}</Text>
+                          <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.cantidad_inicial} {r.unidad}</Text>
                           {inventarioLiquidos.meses.map((m) => (
-                            <Text key={m} style={styles.tableCell}>
+                            <Text key={m} style={[styles.tableCell, { minWidth: 100 }]}>
                               {r.consumos[m] || 0}
                             </Text>
                           ))}
-                          <Text style={styles.tableCell}>{r.existencia_final} {r.unidad}</Text>
-                          <Text style={styles.tableCell}>{r.total_consumido} {r.unidad}</Text>
+                          <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.existencia_final} {r.unidad}</Text>
+                          <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.total_consumido} {r.unidad}</Text>
                         </View>
                       ))}
                     </View>
@@ -590,27 +590,27 @@ export default function ReportesScreen() {
                   <ScrollView horizontal>
                     <View>
                       <View style={[styles.tableHeader, { backgroundColor: '#8b5cf6' }]}>
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Reactivo</Text>
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Cantidad</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Reactivo</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Cantidad</Text>
                         {inventarioSolidos.meses.map((m) => (
-                          <Text key={m} style={[styles.tableHeaderCell, { color: '#ffffff' }]}>
+                          <Text key={m} style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>
                             {m}
                           </Text>
                         ))}
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Existencia Final</Text>
-                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Total</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Existencia Final</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Total</Text>
                       </View>
                       {filteredSolidos.slice(0, 5).map((r, idx) => (
-                        <View style={styles.tableRow} key={idx}>
-                          <Text style={styles.tableCell}>{r.nombre.replace(/_/g, ' ')}</Text>
-                          <Text style={styles.tableCell}>{r.cantidad_inicial} {r.unidad}</Text>
+                        <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
+                          <Text style={[styles.tableCell, { minWidth: 150 }]}>{r.nombre.replace(/_/g, ' ')}</Text>
+                          <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.cantidad_inicial} {r.unidad}</Text>
                           {inventarioSolidos.meses.map((m) => (
-                            <Text key={m} style={styles.tableCell}>
+                            <Text key={m} style={[styles.tableCell, { minWidth: 100 }]}>
                               {r.consumos[m] || 0}
                             </Text>
                           ))}
-                          <Text style={styles.tableCell}>{r.existencia_final} {r.unidad}</Text>
-                          <Text style={styles.tableCell}>{r.total_consumido} {r.unidad}</Text>
+                          <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.existencia_final} {r.unidad}</Text>
+                          <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.total_consumido} {r.unidad}</Text>
                         </View>
                       ))}
                     </View>
@@ -648,15 +648,15 @@ export default function ReportesScreen() {
             </View>
             <View>
               <View style={[styles.tableHeader, { backgroundColor: '#3b82f6' }]}>
-                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Nombre</Text>
-                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Grupo</Text>
-                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Acciones</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Nombre</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Grupo</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Acciones</Text>
               </View>
               {filteredHistorial.map((h, idx) => (
-                <View style={styles.tableRow} key={idx}>
-                  <Text style={styles.tableCell}>{h.nombre}</Text>
-                  <Text style={styles.tableCell}>{h.grupo}</Text>
-                  <View style={styles.actionButtons}>
+                <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
+                  <Text style={[styles.tableCell, { minWidth: 150 }]}>{h.nombre}</Text>
+                  <Text style={[styles.tableCell, { minWidth: 100 }]}>{h.grupo}</Text>
+                  <View style={[styles.actionButtons, { minWidth: 100 }]}>
                     <TouchableOpacity onPress={() => downloadHistorialCSV(h.registros, h.nombre)}>
                       <Ionicons name="download-outline" size={20} color="#3b82f6" />
                     </TouchableOpacity>
@@ -691,18 +691,18 @@ export default function ReportesScreen() {
             </View>
             <View>
               <View style={[styles.tableHeader, { backgroundColor: '#14b8a6' }]}>
-                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Nombre</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Nombre</Text>
               </View>
               {grupos.map((g, idx) => (
                 <TouchableOpacity
                   key={idx}
-                  style={styles.tableRow}
+                  style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]}
                   onPress={() => {
                     setGrupoDetalle(g);
                     setShowGruposModal(false);
                   }}
                 >
-                  <Text style={styles.tableCell}>{g.nombre}</Text>
+                  <Text style={[styles.tableCell, { minWidth: 150 }]}>{g.nombre}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -730,15 +730,15 @@ export default function ReportesScreen() {
             </View>
             <View>
               <View style={[styles.tableHeader, { backgroundColor: '#14b8a6' }]}>
-                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Cantidad</Text>
-                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Material</Text>
-                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Solicitante</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Cantidad</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Material</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Solicitante</Text>
               </View>
               {grupoDetalle?.adeudos.map((a, idx) => (
-                <View style={styles.tableRow} key={idx}>
-                  <Text style={styles.tableCell}>{a.cantidad} {a.unidad}</Text>
-                  <Text style={styles.tableCell}>{a.nombre_material}</Text>
-                  <Text style={styles.tableCell}>{a.solicitante}</Text>
+                <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
+                  <Text style={[styles.tableCell, { minWidth: 100 }]}>{a.cantidad} {a.unidad}</Text>
+                  <Text style={[styles.tableCell, { minWidth: 150 }]}>{a.nombre_material}</Text>
+                  <Text style={[styles.tableCell, { minWidth: 150 }]}>{a.solicitante}</Text>
                 </View>
               ))}
             </View>
@@ -746,123 +746,123 @@ export default function ReportesScreen() {
         </View>
       </Modal>
 
-     {/* Modal Inventario Reactivos Líquidos */}
-<Modal
-  visible={showLiquidosModal}
-  animationType="slide"
-  transparent={true}
-  onRequestClose={() => setShowLiquidosModal(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={[styles.modalContent, { maxWidth: isTablet ? '80%' : '90%' }]}>
-      <View style={styles.modalHeader}>
-        <View style={styles.cardTitleContainer}>
-          <Ionicons name="water-outline" size={20} color="#06b6d4" style={styles.icon} />
-          <Text style={[styles.modalTitle, { color: '#06b6d4' }]}>Inventario Reactivos Líquidos</Text>
-        </View>
-        <TouchableOpacity onPress={() => setShowLiquidosModal(false)}>
-          <Ionicons name="close" size={24} color="#ef4444" />
-        </TouchableOpacity>
-      </View>
-      <ScrollView horizontal>
-        <ScrollView>
-          <View>
-            <View style={[styles.tableHeader, { backgroundColor: '#06b6d4' }]}>
-              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 150 }]}>Reactivo</Text>
-              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Cantidad</Text>
-              {inventarioLiquidos.meses.map((m) => (
-                <Text key={m} style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>
-                  {m}
-                </Text>
-              ))}
-              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Existencia Final</Text>
-              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Total</Text>
-            </View>
-            {filteredLiquidos.length === 0 ? (
-              <View style={styles.noDataContainer}>
-                <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
-                <Text style={styles.noData}>No hay registros.</Text>
+      {/* Modal Inventario Reactivos Líquidos */}
+      <Modal
+        visible={showLiquidosModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowLiquidosModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { maxWidth: isTablet ? '80%' : '90%' }]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.cardTitleContainer}>
+                <Ionicons name="water-outline" size={20} color="#06b6d4" style={styles.icon} />
+                <Text style={[styles.modalTitle, { color: '#06b6d4' }]}>Inventario Reactivos Líquidos</Text>
               </View>
-            ) : (
-              filteredLiquidos.map((r, idx) => (
-                <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
-                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 150 }]}>{r.nombre.replace(/_/g, ' ')}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.cantidad_inicial} {r.unidad}</Text>
-                  {inventarioLiquidos.meses.map((m) => (
-                    <Text key={m} style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>
-                      {r.consumos[m] || 0}
-                    </Text>
-                  ))}
-                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.existencia_final} {r.unidad}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.total_consumido} {r.unidad}</Text>
+              <TouchableOpacity onPress={() => setShowLiquidosModal(false)}>
+                <Ionicons name="close" size={24} color="#ef4444" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal>
+              <ScrollView>
+                <View>
+                  <View style={[styles.tableHeader, { backgroundColor: '#06b6d4' }]}>
+                    <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Reactivo</Text>
+                    <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Cantidad</Text>
+                    {inventarioLiquidos.meses.map((m) => (
+                      <Text key={m} style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>
+                        {m}
+                      </Text>
+                    ))}
+                    <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Existencia Final</Text>
+                    <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Total</Text>
+                  </View>
+                  {filteredLiquidos.length === 0 ? (
+                    <View style={styles.noDataContainer}>
+                      <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
+                      <Text style={styles.noData}>No hay registros.</Text>
+                    </View>
+                  ) : (
+                    filteredLiquidos.map((r, idx) => (
+                      <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
+                        <Text style={[styles.tableCell, { minWidth: 150 }]}>{r.nombre.replace(/_/g, ' ')}</Text>
+                        <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.cantidad_inicial} {r.unidad}</Text>
+                        {inventarioLiquidos.meses.map((m) => (
+                          <Text key={m} style={[styles.tableCell, { minWidth: 100 }]}>
+                            {r.consumos[m] || 0}
+                          </Text>
+                        ))}
+                        <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.existencia_final} {r.unidad}</Text>
+                        <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.total_consumido} {r.unidad}</Text>
+                      </View>
+                    ))
+                  )}
                 </View>
-              ))
-            )}
+              </ScrollView>
+            </ScrollView>
           </View>
-        </ScrollView>
-      </ScrollView>
-    </View>
-  </View>
-</Modal>
+        </View>
+      </Modal>
 
-{/* Modal Inventario Reactivos Sólidos */}
-<Modal
-  visible={showSolidosModal}
-  animationType="slide"
-  transparent={true}
-  onRequestClose={() => setShowSolidosModal(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={[styles.modalContent, { maxWidth: isTablet ? '80%' : '90%' }]}>
-      <View style={styles.modalHeader}>
-        <View style={styles.cardTitleContainer}>
-          <Ionicons name="cube-outline" size={20} color="#8b5cf6" style={styles.icon} />
-          <Text style={[styles.modalTitle, { color: '#8b5cf6' }]}>Inventario Reactivos Sólidos</Text>
-        </View>
-        <TouchableOpacity onPress={() => setShowSolidosModal(false)}>
-          <Ionicons name="close" size={24} color="#ef4444" />
-        </TouchableOpacity>
-      </View>
-      <ScrollView horizontal>
-        <ScrollView>
-          <View>
-            <View style={[styles.tableHeader, { backgroundColor: '#8b5cf6' }]}>
-              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 150 }]}>Reactivo</Text>
-              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Cantidad</Text>
-              {inventarioSolidos.meses.map((m) => (
-                <Text key={m} style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>
-                  {m}
-                </Text>
-              ))}
-              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Existencia Final</Text>
-              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Total</Text>
-            </View>
-            {filteredSolidos.length === 0 ? (
-              <View style={styles.noDataContainer}>
-                <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
-                <Text style={styles.noData}>No hay registros.</Text>
+      {/* Modal Inventario Reactivos Sólidos */}
+      <Modal
+        visible={showSolidosModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSolidosModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { maxWidth: isTablet ? '80%' : '90%' }]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.cardTitleContainer}>
+                <Ionicons name="cube-outline" size={20} color="#8b5cf6" style={styles.icon} />
+                <Text style={[styles.modalTitle, { color: '#8b5cf6' }]}>Inventario Reactivos Sólidos</Text>
               </View>
-            ) : (
-              filteredSolidos.map((r, idx) => (
-                <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
-                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 150 }]}>{r.nombre.replace(/_/g, ' ')}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.cantidad_inicial} {r.unidad}</Text>
-                  {inventarioSolidos.meses.map((m) => (
-                    <Text key={m} style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>
-                      {r.consumos[m] || 0}
-                    </Text>
-                  ))}
-                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.existencia_final} {r.unidad}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.total_consumido} {r.unidad}</Text>
+              <TouchableOpacity onPress={() => setShowSolidosModal(false)}>
+                <Ionicons name="close" size={24} color="#ef4444" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal>
+              <ScrollView>
+                <View>
+                  <View style={[styles.tableHeader, { backgroundColor: '#8b5cf6' }]}>
+                    <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 150 }]}>Reactivo</Text>
+                    <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Cantidad</Text>
+                    {inventarioSolidos.meses.map((m) => (
+                      <Text key={m} style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>
+                        {m}
+                      </Text>
+                    ))}
+                    <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Existencia Final</Text>
+                    <Text style={[styles.tableHeaderCell, { color: '#ffffff', minWidth: 100 }]}>Total</Text>
+                  </View>
+                  {filteredSolidos.length === 0 ? (
+                    <View style={styles.noDataContainer}>
+                      <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
+                      <Text style={styles.noData}>No hay registros.</Text>
+                    </View>
+                  ) : (
+                    filteredSolidos.map((r, idx) => (
+                      <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
+                        <Text style={[styles.tableCell, { minWidth: 150 }]}>{r.nombre.replace(/_/g, ' ')}</Text>
+                        <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.cantidad_inicial} {r.unidad}</Text>
+                        {inventarioSolidos.meses.map((m) => (
+                          <Text key={m} style={[styles.tableCell, { minWidth: 100 }]}>
+                            {r.consumos[m] || 0}
+                          </Text>
+                        ))}
+                        <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.existencia_final} {r.unidad}</Text>
+                        <Text style={[styles.tableCell, { minWidth: 100 }]}>{r.total_consumido} {r.unidad}</Text>
+                      </View>
+                    ))
+                  )}
                 </View>
-              ))
-            )}
+              </ScrollView>
+            </ScrollView>
           </View>
-        </ScrollView>
-      </ScrollView>
-    </View>
-  </View>
-</Modal>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -939,12 +939,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 8,
   },
-  tableCellBorder: {
-  borderWidth: 1,
-  borderColor: '#e5e7eb',
-  padding: 8,
-  textAlign: 'center',
-},
   noData: {
     fontSize: 12, // Reduced for mobile
     color: '#6b7280',
@@ -961,13 +955,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12, // Reduced for mobile
     fontWeight: 'bold',
-    textAlign: 'left',
+    textAlign: 'center',
+    padding: 8,
   },
   tableRow: {
     flexDirection: 'row',
-    padding: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    alignItems: 'center',
   },
   tableRowActive: {
     backgroundColor: 'rgba(20, 184, 166, 0.2)',
@@ -976,7 +969,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12, // Reduced for mobile
     color: '#4b5563',
-    textAlign: 'left',
+    textAlign: 'center',
+    padding: 8,
   },
   actionButtons: {
     flexDirection: 'row',
