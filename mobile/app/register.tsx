@@ -8,7 +8,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
-   ImageBackground,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import axios from 'axios';
@@ -66,11 +65,7 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require('../assets/fondo1.png')}
-      style={styles.container}
-      resizeMode="cover"
-    >
+   <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
@@ -193,20 +188,20 @@ export default function RegisterScreen() {
               )}
             </TouchableOpacity>
 
-            <Text style={styles.loginText}>
-              ¿Ya tienes cuenta?{' '}
+          <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>¿Ya tienes cuenta? </Text>
               <Link href="/login" asChild>
                 <TouchableOpacity>
-                  <Text style={[styles.linkText, { fontWeight: 'bold' }]}>
+                 <Text style={[styles.loginText, styles.linkText, { fontWeight: 'bold' }]}> 
                     Inicia sesión
                   </Text>
                 </TouchableOpacity>
               </Link>
-            </Text>
+             </View>
           </View>
         </ScrollView>
         </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -231,6 +226,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: Dimensions.get('window').width * 0.9, // 90% of screen width
     alignSelf: 'center',
+     borderColor: '#003579',
+    borderWidth: 2,
+    padding: 16,
+    borderRadius: 4,
   },
    header: {
     backgroundColor: '#003579',
@@ -353,11 +352,15 @@ const styles = StyleSheet.create({
   },
   loginText: {
     color: 'rgba(0,0,0,0.5)',
-    textAlign: 'center',
     fontSize: 14,
   },
   linkText: {
     color: '#000',
     fontSize: 14,
+  },
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
