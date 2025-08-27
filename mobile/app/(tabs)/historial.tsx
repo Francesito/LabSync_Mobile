@@ -12,7 +12,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '../../lib/auth';
 
 // Interfaces
 interface HistorialItem {
@@ -51,7 +51,7 @@ export default function HistorialScreen() {
   const [mostrarTodoMovimientos, setMostrarTodoMovimientos] = useState(false);
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://your-api-url'; // Replace with your API URL if not using env
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://labsync-1090.onrender.com'; // Replace with your API URL if not using env
 
   const formatearFecha = (fecha: string | null): string => {
     if (!fecha) return '-';

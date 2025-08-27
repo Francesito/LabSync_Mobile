@@ -13,7 +13,6 @@ import {
   useWindowDimensions,
   SafeAreaView,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
@@ -77,8 +76,11 @@ export default function ConfiguracionScreen() {
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
 
-   useEffect(() => {
-    if (!API_URL) return;
+     useEffect(() => {
+    if (!API_URL) {
+      console.warn('API_URL no está configurada');
+      return;
+    }
     if (usuario && usuario.rol_id === 4) {
       cargarUsuariosAlmacen();
       cargarTodosUsuarios();
@@ -565,9 +567,9 @@ export default function ConfiguracionScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#f9fafb', '#f3f4f6']} style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+   <SafeAreaView style={styles.safeArea}>
+      <LinearGradient colors={['#f9fafb', '#f3f4f6']} style={[styles.container, styles.linearGradientFix]}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View
             style={[
@@ -644,8 +646,8 @@ export default function ConfiguracionScreen() {
             </View>
           ) : null}
 
-          {/* Contenido según vista activa */}
-          <View style={{ paddingHorizontal: isTablet ? 32 : 16 }}>
+         {/* Contenido según vista activa */}
+          <View style={[styles.contentContainer, { paddingHorizontal: isTablet ? 32 : 16 }]}>
             {vistaActiva === 'crear' && (
               <View style={styles.section}>
                 <View style={styles.sectionIcon}>
@@ -677,25 +679,35 @@ export default function ConfiguracionScreen() {
                       keyboardType="email-address"
                     />
                   </View>
-
-                  <View style={styles.formField}>
-                    <Text style={styles.formLabel}>Rol del Usuario</Text>
-                    <Picker
-                      selectedValue={nuevoUsuario.rol_id}
-                      onValueChange={(value) =>
-                        setNuevoUsuario({ ...nuevoUsuario, rol_id: value })
-                      }
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Seleccionar rol" value="" />
-                      {roles.map((rol) => (
-                        <Picker.Item
-                          key={rol.id}
-                          label={rol.nombre.charAt(0).toUpperCase() + rol.nombre.slice(1)}
-                          value={rol.id.toString()}
-                        />
-                      ))}
-                    </Picker>
+ <View style={styles.buttonGroup}>
+                      {roles.map((rol) => {
+                        const selected = nuevoUsuario.rol_id === rol.id.toString();
+                        return (
+                          <TouchableOpacity
+                            key={rol.id}
+                            style={[
+                              styles.optionButton,
+                              selected && styles.optionButtonSelected,
+                            ]}
+                            onPress={() =>
+                              setNuevoUsuario({
+                                ...nuevoUsuario,
+                                rol_id: rol.id.toString(),
+                              })
+                            }
+                          >
+                            <Text
+                              style={[
+                                styles.optionButtonText,
+                                selected && styles.optionButtonTextSelected,
+                              ]}
+                            >
+                              {rol.nombre.charAt(0).toUpperCase() + rol.nombre.slice(1)}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
                   </View>
                 </View>
 
@@ -984,19 +996,33 @@ export default function ConfiguracionScreen() {
 
                 <View style={styles.formField}>
                   <Text style={styles.formLabel}>Grupo</Text>
-                  <Picker
-                    selectedValue={grupoSeleccionado}
-                    onValueChange={(value) => {
-                      setGrupoSeleccionado(value);
-                      setUsuariosSeleccionados([]);
-                    }}
-                    style={styles.picker}
-                  >
-                    <Picker.Item label="Seleccione un grupo" value="" />
-                    {grupos.map((g) => (
-                      <Picker.Item key={g.id} label={g.nombre} value={g.id.toString()} />
-                    ))}
-                  </Picker>
+                   <View style={styles.buttonGroup}>
+                    {grupos.map((g) => {
+                      const selected = grupoSeleccionado === g.id.toString();
+                      return (
+                        <TouchableOpacity
+                          key={g.id}
+                          style={[
+                            styles.optionButton,
+                            selected && styles.optionButtonSelected,
+                          ]}
+                          onPress={() => {
+                            setGrupoSeleccionado(g.id.toString());
+                            setUsuariosSeleccionados([]);
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.optionButtonText,
+                              selected && styles.optionButtonTextSelected,
+                            ]}
+                          >
+                            {g.nombre}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
 
                 {grupoSeleccionado && (
@@ -1096,6 +1122,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1e293b',
     marginBottom: 8,
+  },
+   contentContainer: {
+    paddingBottom: 20,
   },
   headerSubtitle: {
     fontSize: 16,
@@ -1276,13 +1305,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#f9fafb',
   },
-  picker: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
+ buttonGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  optionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#e5e7eb',
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  optionButtonSelected: {
+    backgroundColor: '#3b82f6',
+  },
+  optionButtonText: {
+    color: '#374151',
+    fontWeight: '500',
+  },
+  optionButtonTextSelected: {
+    color: '#ffffff',
   },
   submitButton: {
     alignItems: 'center',
@@ -1296,6 +1339,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  linearGradientFix: {
+    flex: 1,
+    minHeight: '100%',
   },
   submitText: {
     fontSize: 16,
