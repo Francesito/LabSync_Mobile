@@ -11,10 +11,7 @@ import {
   ScrollView,
   useWindowDimensions,
   SafeAreaView,
-  Platform,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
 // eslint-disable-next-line import/no-unresolved
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -48,6 +45,12 @@ const RESIDUE_TYPES = [
   { label: 'Común', value: 'comun', icon: 'trash-outline', color: '#4b5563' },
 ];
 
+const UNITS = [
+  { label: 'g', value: 'g' },
+  { label: 'mL', value: 'ml' },
+  { label: 'u', value: 'u' },
+];
+
 const getTipoLabel = (value: string): string =>
   RESIDUE_TYPES.find((t) => t.value === value)?.label || value;
 
@@ -64,6 +67,95 @@ const formatDate = (d: Date | string): string => {
   const date = d instanceof Date ? d : new Date(d);
   if (isNaN(date.getTime())) return '';
   return date.toISOString().split('T')[0];
+};
+
+const startOfWeek = (d: Date): Date => {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = (day === 0 ? -6 : 1) - day; // Monday as first day
+  date.setDate(date.getDate() + diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const addDays = (d: Date, days: number): Date => {
+  const date = new Date(d);
+  date.setDate(date.getDate() + days);
+  return date;
+};
+
+const WeekDateSelector = ({
+  date,
+  onSelect,
+}: {
+  date: Date | undefined;
+  onSelect: (d: Date) => void;
+}) => {
+  const todayStart = startOfWeek(new Date());
+  const [weekStart, setWeekStart] = useState(startOfWeek(date || new Date()));
+
+  useEffect(() => {
+    if (date) {
+      setWeekStart(startOfWeek(date));
+    }
+  }, [date]);
+
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const isCurrentWeek = weekStart >= todayStart;
+
+  return (
+    <View style={styles.weekSelector}>
+      <TouchableOpacity
+        onPress={() => setWeekStart(addDays(weekStart, -7))}
+        style={styles.weekArrow}
+      >
+        <Ionicons name="chevron-back" size={20} color="#4b5563" />
+      </TouchableOpacity>
+      <View style={styles.weekDays}>
+        {days.map((d) => {
+          const selected = date && formatDate(d) === formatDate(date);
+          return (
+            <TouchableOpacity
+              key={d.toISOString()}
+              onPress={() => onSelect(new Date(d))}
+              style={[
+                styles.dayButton,
+                selected && styles.daySelected,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.dayMonth,
+                  selected && styles.daySelectedText,
+                ]}
+              >
+                {d.toLocaleString('es-ES', { month: 'long' })}
+              </Text>
+              <Text
+                style={[
+                  styles.dayNumber,
+                  selected && styles.daySelectedText,
+                ]}
+              >
+                {d.getDate()}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <TouchableOpacity
+        onPress={() => setWeekStart(addDays(weekStart, 7))}
+        style={styles.weekArrow}
+        disabled={isCurrentWeek}
+      >
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={isCurrentWeek ? '#9ca3af' : '#4b5563'}
+        />
+      </TouchableOpacity>
+    </View>
+  );
 };
 
 interface Residuo {
@@ -101,9 +193,6 @@ export default function ResiduosScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
   const [toDate, setToDate] = useState<Date | undefined>(undefined);
-  const [showFromDatePicker, setShowFromDatePicker] = useState(false);
-  const [showToDatePicker, setShowToDatePicker] = useState(false);
-  const [showFormDatePicker, setShowFormDatePicker] = useState(false);
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
 
@@ -288,25 +377,10 @@ export default function ResiduosScreen() {
                   <Ionicons name="calendar-outline" size={20} color="#4b5563" />
                   <Text style={styles.label}>Fecha *</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.input}
-                  onPress={() => setShowFormDatePicker(true)}
-                >
-                  <Text style={styles.inputText}>{formatDate(form.fecha)}</Text>
-                </TouchableOpacity>
-                {showFormDatePicker && (
-                  <DateTimePicker
-                    value={form.fecha}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, selectedDate) => {
-                      setShowFormDatePicker(Platform.OS === 'ios');
-                      if (selectedDate) {
-                        handleFormChange('fecha', selectedDate);
-                      }
-                    }}
-                  />
-                )}
+                <WeekDateSelector
+                  date={form.fecha}
+                  onSelect={(d) => handleFormChange('fecha', d)}
+                />
               </View>
 
               {/* Laboratorio */}
@@ -315,16 +389,27 @@ export default function ResiduosScreen() {
                   <Ionicons name="business-outline" size={20} color="#4b5563" />
                   <Text style={styles.label}>Laboratorio *</Text>
                 </View>
-                <Picker
-                  selectedValue={form.laboratorio}
-                  onValueChange={(value) => handleFormChange('laboratorio', value)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="-- Seleccionar laboratorio --" value="" />
+               <View style={styles.buttonRow}>
                   {LABS.map((lab) => (
-                    <Picker.Item key={lab} label={lab} value={lab} />
+                    <TouchableOpacity
+                      key={lab}
+                      style={[
+                        styles.optionButton,
+                        form.laboratorio === lab && styles.optionButtonSelected,
+                      ]}
+                      onPress={() => handleFormChange('laboratorio', lab)}
+                    >
+                      <Text
+                        style={[
+                          styles.optionButtonText,
+                          form.laboratorio === lab && styles.optionButtonTextSelected,
+                        ]}
+                      >
+                        {lab}
+                      </Text>
+                    </TouchableOpacity>
                   ))}
-                </Picker>
+                     </View>
               </View>
 
               {/* Reactivo */}
@@ -347,16 +432,32 @@ export default function ResiduosScreen() {
                   <Ionicons name="pricetag-outline" size={20} color="#4b5563" />
                   <Text style={styles.label}>Tipo de Residuo *</Text>
                 </View>
-                <Picker
-                  selectedValue={form.tipo}
-                  onValueChange={(value) => handleFormChange('tipo', value)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="-- Seleccionar tipo --" value="" />
+               <View style={styles.buttonRow}>
                   {RESIDUE_TYPES.map((type) => (
-                    <Picker.Item key={type.value} label={`${type.icon} ${type.label}`} value={type.value} />
+                    <TouchableOpacity
+                      key={type.value}
+                      style={[
+                        styles.optionButton,
+                        form.tipo === type.value && styles.optionButtonSelected,
+                      ]}
+                      onPress={() => handleFormChange('tipo', type.value)}
+                    >
+                      <Ionicons
+                        name={type.icon as React.ComponentProps<typeof Ionicons>['name']}
+                        size={16}
+                        color={form.tipo === type.value ? '#ffffff' : type.color}
+                      />
+                      <Text
+                        style={[
+                          styles.optionButtonText,
+                          form.tipo === type.value && styles.optionButtonTextSelected,
+                        ]}
+                      >
+                        {type.label}
+                      </Text>
+                    </TouchableOpacity>
                   ))}
-                </Picker>
+               </View>
               </View>
 
               {/* Cantidad y Unidad */}
@@ -379,16 +480,27 @@ export default function ResiduosScreen() {
                     <Ionicons name="resize-outline" size={20} color="#4b5563" />
                     <Text style={styles.label}>Unidad *</Text>
                   </View>
-                  <Picker
-                    selectedValue={form.unidad}
-                    onValueChange={(value) => handleFormChange('unidad', value)}
-                    style={styles.picker}
-                  >
-                    <Picker.Item label="-- Unidad --" value="" />
-                    <Picker.Item label="g (gramos)" value="g" />
-                    <Picker.Item label="mL (mililitros)" value="ml" />
-                    <Picker.Item label="u (unidades)" value="u" />
-                  </Picker>
+                <View style={styles.buttonRow}>
+                    {UNITS.map((u) => (
+                      <TouchableOpacity
+                        key={u.value}
+                        style={[
+                          styles.optionButton,
+                          form.unidad === u.value && styles.optionButtonSelected,
+                        ]}
+                        onPress={() => handleFormChange('unidad', u.value as UnidadResiduo)}
+                      >
+                        <Text
+                          style={[
+                            styles.optionButtonText,
+                            form.unidad === u.value && styles.optionButtonTextSelected,
+                          ]}
+                        >
+                          {u.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
               </View>
 
@@ -420,44 +532,14 @@ export default function ResiduosScreen() {
             {/* Filters and Actions */}
             <View style={styles.actions}>
               <View style={styles.dateFilters}>
-                <TouchableOpacity
-                  style={styles.dateInput}
-                  onPress={() => setShowFromDatePicker(true)}
-                >
-                  <Text style={styles.dateText}>
-                    Desde: {fromDate ? formatDate(fromDate) : 'Seleccionar'}
-                  </Text>
-                </TouchableOpacity>
-                {showFromDatePicker && (
-                  <DateTimePicker
-                    value={fromDate || new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, selectedDate) => {
-                      setShowFromDatePicker(Platform.OS === 'ios');
-                      setFromDate(selectedDate);
-                    }}
-                  />
-                )}
-                <TouchableOpacity
-                  style={styles.dateInput}
-                  onPress={() => setShowToDatePicker(true)}
-                >
-                  <Text style={styles.dateText}>
-                    Hasta: {toDate ? formatDate(toDate) : 'Seleccionar'}
-                  </Text>
-                </TouchableOpacity>
-                {showToDatePicker && (
-                  <DateTimePicker
-                    value={toDate || new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, selectedDate) => {
-                      setShowToDatePicker(Platform.OS === 'ios');
-                      setToDate(selectedDate);
-                    }}
-                  />
-                )}
+               <View style={{ flex: 1 }}>
+                  <Text style={styles.rangeLabel}>Desde</Text>
+                  <WeekDateSelector date={fromDate} onSelect={setFromDate} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rangeLabel}>Hasta</Text>
+                  <WeekDateSelector date={toDate} onSelect={setToDate} />
+                </View>
               </View>
               <View style={styles.actionButtons}>
                 <TouchableOpacity
@@ -646,17 +728,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1e293b',
   },
-  picker: {
+ row: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  optionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#ffffff',
+   gap: 4,
   },
-  row: {
-    flexDirection: 'row',
-    gap: 16,
+ optionButtonSelected: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  optionButtonText: {
+    color: '#1e293b',
+    fontSize: 14,
+  },
+  optionButtonTextSelected: {
+    color: '#ffffff',
   },
   submitButton: {
     flexDirection: 'row',
@@ -680,17 +780,11 @@ const styles = StyleSheet.create({
     gap: 16,
     marginBottom: 16,
   },
-  dateInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    justifyContent: 'center',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#1e293b',
+ rangeLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4b5563',
+    marginBottom: 8,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -750,6 +844,46 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 20,
+  },
+   weekSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  weekArrow: {
+    padding: 4,
+  },
+  weekDays: {
+    flexDirection: 'row',
+    flex: 1,
+    justifyContent: 'space-between',
+    gap: 4,
+  },
+  dayButton: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+  },
+  daySelected: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  dayMonth: {
+    fontSize: 10,
+    color: '#4b5563',
+    textTransform: 'capitalize',
+  },
+  dayNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1e293b',
+  },
+  daySelectedText: {
+    color: '#ffffff',
   },
   card: {
     backgroundColor: '#ffffff',
