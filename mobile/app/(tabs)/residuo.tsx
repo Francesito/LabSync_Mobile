@@ -15,13 +15,20 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as SecureStore from 'expo-secure-store';
+// eslint-disable-next-line import/no-unresolved
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { obtenerResiduos, registrarResiduo, eliminarResiduos } from '../../lib/api'; // Adjust path as needed
+import {
+  obtenerResiduos,
+  registrarResiduo,
+  eliminarResiduos,
+  TipoResiduo,
+  UnidadResiduo,
+  CrearResiduoPayload,
+} from '../../lib/api'; // Adjust path as needed
 import { useAuth } from '@/lib/auth'; // Adjust path as needed
 
 const LABS = [
@@ -64,20 +71,30 @@ interface Residuo {
   fecha: string;
   laboratorio: string;
   reactivo: string;
-  tipo: string;
+    tipo: TipoResiduo;
   cantidad: number;
-  unidad: string;
+  unidad: UnidadResiduo;
 }
 
 export default function ResiduosScreen() {
   const { usuario } = useAuth();
-  const [form, setForm] = useState({
+  
+    type FormState = {
+    fecha: Date;
+    laboratorio: string;
+    reactivo: string;
+    tipo: TipoResiduo | '';
+    cantidad: string;
+    unidad: UnidadResiduo | '';
+  };
+
+  const [form, setForm] = useState<FormState>({
     fecha: new Date(),
     laboratorio: '',
     reactivo: '',
-    tipo: '',
+   tipo: '' as FormState['tipo'],
     cantidad: '',
-    unidad: '',
+     unidad: '' as FormState['unidad'],
   });
   const [entries, setEntries] = useState<Residuo[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
@@ -115,13 +132,13 @@ export default function ResiduosScreen() {
 
     setIsLoading(true);
     try {
-      const payload = {
+       const payload: CrearResiduoPayload = {
         fecha: formatDate(fecha),
         laboratorio,
         reactivo,
-        tipo,
+          tipo: tipo as TipoResiduo,
         cantidad: parseFloat(cantidad),
-        unidad,
+        unidad: unidad as UnidadResiduo,
       };
 
       const saved = await registrarResiduo(payload);
@@ -130,9 +147,9 @@ export default function ResiduosScreen() {
         fecha: new Date(),
         laboratorio: '',
         reactivo: '',
-        tipo: '',
+        tipo: '' as FormState['tipo'],
         cantidad: '',
-        unidad: '',
+           unidad: '' as FormState['unidad'],
       });
     } catch (err) {
       console.error('Error al registrar residuo:', err);
