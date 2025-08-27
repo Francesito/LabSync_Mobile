@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -544,6 +543,7 @@ export default function ConfiguracionScreen() {
 
   const renderTab = ({ item }: { item: { id: string; name: string; icon: string } }) => (
     <TouchableOpacity
+    key={item.id}
       style={[
         styles.tabButton,
         vistaActiva === item.id ? styles.activeTab : styles.inactiveTab,
@@ -586,16 +586,16 @@ export default function ConfiguracionScreen() {
           </View>
 
           {/* Estadísticas Cards */}
-          <FlatList
-            data={estadisticas.roles}
+         <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={[
               styles.statsList,
               { paddingHorizontal: isTablet ? 32 : 16 },
             ]}
-            renderItem={({ item: rol }) => (
-              <View style={styles.statCard}>
+          >
+            {estadisticas.roles.map((rol) => (
+              <View key={rol.rol} style={styles.statCard}>
                 <Text style={styles.statLabel}>{rol.rol}</Text>
                 <Text style={styles.statValue}>{rol.total}</Text>
                 <View style={styles.statDetails}>
@@ -605,22 +605,20 @@ export default function ConfiguracionScreen() {
                   )}
                 </View>
               </View>
-            )}
-            keyExtractor={(item) => item.rol}
-          />
+           ))}
+          </ScrollView>
 
           {/* Navigation Tabs */}
-          <FlatList
-            data={tabs}
+         <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={[
               styles.tabList,
               { paddingHorizontal: isTablet ? 32 : 16 },
             ]}
-            renderItem={renderTab}
-            keyExtractor={(item) => item.id}
-          />
+             >
+            {tabs.map((tab) => renderTab({ item: tab }))}
+          </ScrollView>
 
           {/* Mensajes */}
           {mensaje.texto ? (
@@ -1037,27 +1035,30 @@ export default function ConfiguracionScreen() {
                 )}
 
                 {grupoSeleccionado && (
-                  <FlatList
-                    data={usuariosGrupoFiltrados}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item: u }) => (
-                      <TouchableOpacity
-                        style={styles.checkboxRow}
-                        onPress={() => toggleSeleccion(u.id)}
-                      >
-                        <Ionicons
-                          name={usuariosSeleccionados.includes(u.id) ? 'checkbox' : 'square-outline'}
-                          size={24}
-                          color="#3b82f6"
-                        />
-                        <Text style={styles.checkboxLabel}>{u.nombre}</Text>
-                      </TouchableOpacity>
-                    )}
-                    contentContainerStyle={styles.checkboxList}
-                    ListEmptyComponent={
+                  <View style={styles.checkboxList}>
+                    {usuariosGrupoFiltrados.length === 0 ? (
                       <Text style={styles.emptyText}>No se encontraron usuarios</Text>
-                    }
-                  />
+                   ) : (
+                      usuariosGrupoFiltrados.map((u) => (
+                        <TouchableOpacity
+                          key={u.id}
+                          style={styles.checkboxRow}
+                          onPress={() => toggleSeleccion(u.id)}
+                        >
+                          <Ionicons
+                            name={
+                              usuariosSeleccionados.includes(u.id)
+                                ? 'checkbox'
+                                : 'square-outline'
+                            }
+                            size={24}
+                            color="#3b82f6"
+                          />
+                          <Text style={styles.checkboxLabel}>{u.nombre}</Text>
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </View>
                 )}
 
                 {grupoSeleccionado && (

@@ -15,6 +15,11 @@ import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../../lib/auth';
 
 // Interfaces
+interface User {
+  rol_id: number;
+  [key: string]: any;
+}
+
 interface HistorialItem {
   id: number;
   folio: string;
@@ -40,7 +45,7 @@ interface MovimientoItem {
 }
 
 export default function HistorialScreen() {
-  const { usuario } = useAuth();
+  const { usuario } = useAuth() as { usuario: User | null };
   const [busqueda, setBusqueda] = useState('');
   const [historial, setHistorial] = useState<HistorialItem[]>([]);
   const [movimientos, setMovimientos] = useState<MovimientoItem[]>([]);
@@ -51,7 +56,7 @@ export default function HistorialScreen() {
   const [mostrarTodoMovimientos, setMostrarTodoMovimientos] = useState(false);
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://labsync-1090.onrender.com'; // Replace with your API URL if not using env
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://labsync-1090.onrender.com';
 
   const formatearFecha = (fecha: string | null): string => {
     if (!fecha) return '-';
@@ -65,12 +70,12 @@ export default function HistorialScreen() {
 
   const getEstadoBadgeStyle = (estado: string) => {
     const styles = {
-      pendiente: { backgroundColor: '#fefcbf', color: '#b45309' }, // yellow-100, yellow-800
-      aprobada: { backgroundColor: '#dbeafe', color: '#1e40af' }, // blue-100, blue-800
-      entregado: { backgroundColor: '#d1fae5', color: '#065f46' }, // green-100, green-800
-      'devuelto parcial': { backgroundColor: '#fed7aa', color: '#c2410c' }, // orange-100, orange-800
-      'devuelto total': { backgroundColor: '#f3f4f6', color: '#4b5563' }, // gray-100, gray-800
-      cancelado: { backgroundColor: '#fee2e2', color: '#991b1b' }, // red-100, red-800
+      pendiente: { backgroundColor: '#fefcbf', color: '#b45309' },
+      aprobada: { backgroundColor: '#dbeafe', color: '#1e40af' },
+      entregado: { backgroundColor: '#d1fae5', color: '#065f46' },
+      'devuelto parcial': { backgroundColor: '#fed7aa', color: '#c2410c' },
+      'devuelto total': { backgroundColor: '#f3f4f6', color: '#4b5563' },
+      cancelado: { backgroundColor: '#fee2e2', color: '#991b1b' },
     };
     return styles[estado as keyof typeof styles] || { backgroundColor: '#f3f4f6', color: '#4b5563' };
   };
@@ -79,7 +84,7 @@ export default function HistorialScreen() {
   const movimientosMostrados = mostrarTodoMovimientos ? movimientos : movimientos.slice(0, 8);
 
   useEffect(() => {
-    if (!usuario || ![3, 4].includes(usuario.rol_id)) {
+    if (!usuario || !usuario.rol_id || ![3, 4].includes(usuario.rol_id)) {
       setError('Acceso denegado. Solo administradores o almacenistas pueden ver el historial.');
       return;
     }
@@ -108,15 +113,22 @@ export default function HistorialScreen() {
           { headers }
         );
 
-        if (!solicitudesResponse.ok || !movimientosResponse.ok) {
-          throw new Error('Error en la respuesta de la API');
+        if (!solicitudesResponse.ok) {
+          throw new Error(`Error al cargar solicitudes: ${solicitudesResponse.statusText}`);
+        }
+        if (!movimientosResponse.ok) {
+          throw new Error(`Error al cargar movimientos: ${movimientosResponse.statusText}`);
         }
 
         const solicitudesData = await solicitudesResponse.json();
         const movimientosData = await movimientosResponse.json();
 
-        const historialData = solicitudesData.historial || [];
-        const movimientosParsed = movimientosData.movimientos || movimientosData || [];
+        const historialData = Array.isArray(solicitudesData.historial) ? solicitudesData.historial : [];
+        const movimientosParsed = Array.isArray(movimientosData.movimientos)
+          ? movimientosData.movimientos
+          : Array.isArray(movimientosData)
+          ? movimientosData
+          : [];
 
         setHistorial(historialData);
         setMovimientos(movimientosParsed);
@@ -124,7 +136,7 @@ export default function HistorialScreen() {
         setMostrarTodoMovimientos(false);
       } catch (err: any) {
         console.error('Error al cargar datos del historial:', err);
-        setError(err.message || 'Error al cargar datos');
+        setError(err.message || 'Error al cargar datos. Por favor, verifica tu conexión.');
       } finally {
         setLoading(false);
       }
@@ -148,7 +160,7 @@ export default function HistorialScreen() {
     );
   }
 
-  if (!usuario || ![3, 4].includes(usuario.rol_id)) {
+  if (!usuario || !usuario.rol_id || ![3, 4].includes(usuario.rol_id)) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.errorContainer}>
@@ -178,7 +190,11 @@ export default function HistorialScreen() {
           <View style={styles.filterInputContainer}>
             <Text style={[styles.label, { fontSize: isTablet ? 14 : 12 }]}>Buscar</Text>
             <TextInput
-              style={[styles.input, { fontSize: isTablet ? 14 : 12 }]}
+              style={[
+                styles.input,
+                { fontSize: isTablet ? 14 : 12 },
+                vista !== 'solicitudes' && styles.inputDisabled,
+              ]}
               value={busqueda}
               onChangeText={setBusqueda}
               placeholder="Nombre o folio"
@@ -248,36 +264,97 @@ export default function HistorialScreen() {
                     keyExtractor={(item) => item.id.toString()}
                     renderItem={({ item }) => (
                       <View style={styles.tableRow}>
-                        <Text style={[styles.tableCell, { minWidth: 100 }]}>{item.folio}</Text>
-                        <Text style={[styles.tableCell, { minWidth: 150 }]}>
+                        <Text
+                          key="folio"
+                          style={[styles.tableCell, { minWidth: width * 0.15 }]}
+                        >
+                          {item.folio}
+                        </Text>
+                        <Text
+                          key="solicitante"
+                          style={[styles.tableCell, { minWidth: width * 0.25 }]}
+                        >
                           {item.nombre_display || item.solicitante}
                         </Text>
-                        <Text style={[styles.tableCell, { minWidth: 150 }]}>{item.encargado}</Text>
-                        <Text style={[styles.tableCell, { minWidth: 120 }]}>
+                        <Text
+                          key="encargado"
+                          style={[styles.tableCell, { minWidth: width * 0.25 }]}
+                        >
+                          {item.encargado}
+                        </Text>
+                        <Text
+                          key="recoleccion"
+                          style={[styles.tableCell, { minWidth: width * 0.2 }]}
+                        >
                           {formatearFecha(item.fecha_recoleccion)}
                         </Text>
-                        <Text style={[styles.tableCell, { minWidth: 120 }]}>
+                        <Text
+                          key="devolucion"
+                          style={[styles.tableCell, { minWidth: width * 0.2 }]}
+                        >
                           {formatearFecha(item.fecha_devolucion)}
                         </Text>
-                        <View style={[styles.tableCell, { minWidth: 120 }]}>
+                        <View
+                          key="estado"
+                          style={[styles.tableCell, { minWidth: width * 0.2 }]}
+                        >
                           <View style={[styles.badge, getEstadoBadgeStyle(item.estado)]}>
                             <Text style={styles.badgeText}>{item.estado}</Text>
                           </View>
                         </View>
-                        <Text style={[styles.tableCell, { minWidth: 200 }]} numberOfLines={2}>
+                        <Text
+                          key="materiales"
+                          style={[styles.tableCell, { minWidth: width * 0.3 }]}
+                          numberOfLines={2}
+                        >
                           {item.materiales || 'Sin materiales'}
                         </Text>
                       </View>
                     )}
                     ListHeaderComponent={() => (
                       <View style={styles.tableHeader}>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 100 }]}>Folio</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 150 }]}>Solicitante</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 150 }]}>Encargado</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 120 }]}>Recolección</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 120 }]}>Devolución</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 120 }]}>Estado</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 200 }]}>Materiales</Text>
+                        <Text
+                          key="folio"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.15 }]}
+                        >
+                          Folio
+                        </Text>
+                        <Text
+                          key="solicitante"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.25 }]}
+                        >
+                          Solicitante
+                        </Text>
+                        <Text
+                          key="encargado"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.25 }]}
+                        >
+                          Encargado
+                        </Text>
+                        <Text
+                          key="recoleccion"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.2 }]}
+                        >
+                          Recolección
+                        </Text>
+                        <Text
+                          key="devolucion"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.2 }]}
+                        >
+                          Devolución
+                        </Text>
+                        <Text
+                          key="estado"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.2 }]}
+                        >
+                          Estado
+                        </Text>
+                        <Text
+                          key="materiales"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.3 }]}
+                        >
+                          Materiales
+                        </Text>
                       </View>
                     )}
                     ListEmptyComponent={() => (
@@ -314,43 +391,97 @@ export default function HistorialScreen() {
                     keyExtractor={(item) => item.id.toString()}
                     renderItem={({ item }) => (
                       <View style={styles.tableRow}>
-                        <Text style={[styles.tableCell, { minWidth: 150 }]}>
+                        <Text
+                          key="material"
+                          style={[styles.tableCell, { minWidth: width * 0.25 }]}
+                        >
                           {item.nombre_material || 'Material Desconocido'}
                         </Text>
-                        <Text style={[styles.tableCell, { minWidth: 100, textTransform: 'capitalize' }]}>
+                        <Text
+                          key="tipo"
+                          style={[styles.tableCell, { minWidth: width * 0.15, textTransform: 'capitalize' }]}
+                        >
                           {item.tipo}
                         </Text>
-                        <Text style={[styles.tableCell, { minWidth: 120, textTransform: 'capitalize' }]}>
+                        <Text
+                          key="movimiento"
+                          style={[styles.tableCell, { minWidth: width * 0.2, textTransform: 'capitalize' }]}
+                        >
                           {item.tipo_movimiento}
                         </Text>
                         <Text
+                          key="cantidad"
                           style={[
                             styles.tableCell,
-                            { minWidth: 100, color: item.cantidad > 0 ? '#16a34a' : '#dc2626' },
+                            { minWidth: width * 0.15, color: item.cantidad > 0 ? '#16a34a' : '#dc2626' },
                           ]}
                         >
                           {item.cantidad > 0 ? '+' : ''}{item.cantidad} {item.unidad}
                         </Text>
-                        <Text style={[styles.tableCell, { minWidth: 100 }]}>
+                        <Text
+                          key="stock"
+                          style={[styles.tableCell, { minWidth: width * 0.15 }]}
+                        >
                           {item.stock_actual} {item.unidad}
                         </Text>
-                        <Text style={[styles.tableCell, { minWidth: 150 }]}>
+                        <Text
+                          key="usuario"
+                          style={[styles.tableCell, { minWidth: width * 0.25 }]}
+                        >
                           {item.usuario || 'Sistema'}
                         </Text>
-                        <Text style={[styles.tableCell, { minWidth: 120 }]}>
+                        <Text
+                          key="fecha"
+                          style={[styles.tableCell, { minWidth: width * 0.2 }]}
+                        >
                           {formatearFecha(item.fecha_movimiento)}
                         </Text>
                       </View>
                     )}
                     ListHeaderComponent={() => (
                       <View style={styles.tableHeader}>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 150 }]}>Material</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 100 }]}>Tipo</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 120 }]}>Movimiento</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 100 }]}>Cantidad</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 100 }]}>Stock Actual</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 150 }]}>Usuario</Text>
-                        <Text style={[styles.tableHeaderCell, { minWidth: 120 }]}>Fecha</Text>
+                        <Text
+                          key="material"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.25 }]}
+                        >
+                          Material
+                        </Text>
+                        <Text
+                          key="tipo"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.15 }]}
+                        >
+                          Tipo
+                        </Text>
+                        <Text
+                          key="movimiento"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.2 }]}
+                        >
+                          Movimiento
+                        </Text>
+                        <Text
+                          key="cantidad"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.15 }]}
+                        >
+                          Cantidad
+                        </Text>
+                        <Text
+                          key="stock"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.15 }]}
+                        >
+                          Stock Actual
+                        </Text>
+                        <Text
+                          key="usuario"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.25 }]}
+                        >
+                          Usuario
+                        </Text>
+                        <Text
+                          key="fecha"
+                          style={[styles.tableHeaderCell, { minWidth: width * 0.2 }]}
+                        >
+                          Fecha
+                        </Text>
                       </View>
                     )}
                     ListEmptyComponent={() => (
@@ -385,15 +516,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb', // bg-gray-50
   },
   container: {
-    padding: 16,
+    padding: 24,
     paddingBottom: 32,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
     flexWrap: 'wrap',
+    gap: 8,
   },
   title: {
     fontSize: 24,
@@ -419,6 +551,7 @@ const styles = StyleSheet.create({
   },
   filterInputContainer: {
     marginRight: 16,
+    marginBottom: 16,
   },
   label: {
     fontSize: 12,
@@ -434,12 +567,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     backgroundColor: '#ffffff',
   },
+  inputDisabled: {
+    backgroundColor: '#f3f4f6', // disabled:bg-gray-100
+  },
   buttonGroup: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
   },
   button: {
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 4,
   },
@@ -460,10 +596,11 @@ const styles = StyleSheet.create({
     color: '#374151', // text-gray-700
   },
   clearButton: {
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     backgroundColor: '#f3f4f6', // bg-gray-100
     borderRadius: 4,
+    marginLeft: 12,
   },
   clearButtonText: {
     color: '#374151', // text-gray-700
@@ -471,6 +608,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    gap: 24,
   },
   card: {
     backgroundColor: '#ffffff', // bg-white
@@ -482,13 +620,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    overflow: 'hidden',
+    marginBottom: 24,
   },
   cardHeader: {
     padding: 16,
     backgroundColor: '#00BCD4',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb', // border-gray-200
+    marginBottom: 16,
   },
   cardTitle: {
     fontSize: 16,
@@ -498,23 +637,23 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     fontSize: 12,
     color: '#e5e7eb', // text-gray-200
-    marginTop: 4,
+    marginTop: 8,
   },
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: '#00BCD4',
-    padding: 12,
+    padding: 16,
   },
   tableHeaderCell: {
     fontSize: 12,
     fontWeight: '600',
     color: '#ffffff', // text-white
     textAlign: 'center',
-    padding: 8,
+    padding: 12,
   },
   tableRow: {
     flexDirection: 'row',
-    padding: 12,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb', // divide-gray-200
     backgroundColor: '#ffffff', // bg-white
@@ -523,7 +662,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#374151', // text-gray-900
     textAlign: 'center',
-    padding: 8,
+    padding: 12,
   },
   badge: {
     paddingVertical: 4,
@@ -537,7 +676,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   emptyContainer: {
-    padding: 32,
+    padding: 40,
     alignItems: 'center',
   },
   emptyText: {
@@ -546,7 +685,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   showMore: {
-    padding: 12,
+    padding: 16,
     backgroundColor: '#f9fafb', // bg-gray-50
     alignItems: 'center',
   },
@@ -559,7 +698,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 24,
     backgroundColor: '#fef2f2', // bg-red-50
     borderWidth: 1,
     borderColor: '#fecaca', // border-red-200
