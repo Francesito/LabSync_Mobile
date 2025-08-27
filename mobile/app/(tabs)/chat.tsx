@@ -123,6 +123,7 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const { width, height } = useWindowDimensions(); // For responsiveness
   const isTablet = width > 600;
+    const [inputHeight, setInputHeight] = useState(0);
 
   // Verificar permisos de chat al cargar el componente
   useEffect(() => {
@@ -498,12 +499,12 @@ export default function ChatScreen() {
                     </View>
                   );
                 }}
-                contentContainerStyle={styles.messageListContent}
+               contentContainerStyle={[styles.messageListContent, { paddingBottom: inputHeight }]}
                 onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
               />
 
               {/* Message Input */}
-              <View style={styles.inputContainer}>
+               <View style={styles.inputContainer} onLayout={(e) => setInputHeight(e.nativeEvent.layout.height)}>
                 <TextInput
                   style={styles.input}
                   placeholder="Escribe un mensaje..."
