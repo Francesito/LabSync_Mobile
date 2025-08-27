@@ -77,10 +77,12 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.formContainer}>
-            <Text style={styles.title}>Crear cuenta</Text>
-            <Text style={styles.subtitle}>
-              Completa los datos para crear tu cuenta en LabSync
-            </Text>
+            <View style={styles.header}>
+              <Text style={styles.title}>Crear cuenta</Text>
+              <Text style={styles.subtitle}>
+                Completa los datos para crear tu cuenta en LabSync
+              </Text>
+            </View>
 
             {error ? (
               <View style={styles.errorContainer}>
@@ -230,17 +232,22 @@ const styles = StyleSheet.create({
     maxWidth: Dimensions.get('window').width * 0.9, // 90% of screen width
     alignSelf: 'center',
   },
+   header: {
+    backgroundColor: '#003579',
+    padding: 16,
+    borderRadius: 4,
+    marginBottom: 24,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
+     color: '#fff',
+    marginBottom: 4,
     textAlign: 'left',
   },
   subtitle: {
     fontSize: 14,
-    color: 'rgba(0,0,0,0.5)',
-    marginBottom: 24,
+     color: '#fff',
     textAlign: 'left',
   },
   errorContainer: {
