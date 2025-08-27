@@ -126,6 +126,7 @@ export default function ChatScreen() {
   const isTablet = width > 600;
   const [inputHeight, setInputHeight] = useState(0);
   const bottom = useBottomTabOverflow();
+    const bottomInset = Math.max(bottom - 10, 0);
 
   // Verificar permisos de chat al cargar el componente
   useEffect(() => {
@@ -504,14 +505,14 @@ export default function ChatScreen() {
                 }}
                  contentContainerStyle={[
                   styles.messageListContent,
-                  { paddingBottom: inputHeight + bottom },
+                  { paddingBottom: inputHeight + bottomInset },
                 ]}
                 onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
               />
 
               {/* Message Input */}
                <View
-                style={[styles.inputContainer, { marginBottom: bottom }]}
+               style={[styles.inputContainer, { marginBottom: bottomInset }]}
                 onLayout={(e) => setInputHeight(e.nativeEvent.layout.height)}
               >
                 <TextInput
@@ -520,6 +521,7 @@ export default function ChatScreen() {
                   value={nuevoMensaje}
                   onChangeText={setNuevoMensaje}
                   multiline
+                    underlineColorAndroid="transparent"
                   editable={!loadingMensajes && !enviandoMensaje && !!permisos && permisos.acceso_chat}
                 />
                 <TouchableOpacity
@@ -594,7 +596,7 @@ export default function ChatScreen() {
                     </View>
                   </TouchableOpacity>
                 )}
-                   contentContainerStyle={[styles.listContent, { paddingBottom: bottom }]}
+                    contentContainerStyle={[styles.listContent, { paddingBottom: bottomInset }]}
               />
             </View>
           )}
@@ -847,6 +849,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     maxHeight: 120,
+     backgroundColor: '#ffffff',
   },
   sendButton: {
     marginLeft: 12,
