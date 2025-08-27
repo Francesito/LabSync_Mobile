@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -191,8 +190,6 @@ export default function ResiduosScreen() {
   const [entries, setEntries] = useState<Residuo[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
-  const [toDate, setToDate] = useState<Date | undefined>(undefined);
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
 
@@ -266,18 +263,13 @@ export default function ResiduosScreen() {
     }
   };
 
-  const filteredEntries = entries.filter((e) => {
-    const entryDate = new Date(e.fecha);
-    if (fromDate && entryDate < fromDate) return false;
-    if (toDate && entryDate > toDate) return false;
-    return true;
-  });
+  const selectedEntries = entries.filter((e) => selected.includes(e.id));
 
   const handleDownloadCSV = async () => {
-    if (filteredEntries.length === 0) return;
+     if (selectedEntries.length === 0) return;
 
     const headers = ['Fecha', 'Laboratorio', 'Reactivo', 'Tipo', 'Cantidad', 'Unidad'];
-    const rows = filteredEntries.map((e) => [
+     const rows = selectedEntries.map((e) => [
       formatDate(e.fecha),
       e.laboratorio,
       e.reactivo,
@@ -293,7 +285,7 @@ export default function ResiduosScreen() {
   };
 
   const handleDownloadPDF = async () => {
-    if (filteredEntries.length === 0) return;
+    if (selectedEntries.length === 0) return;
 
     const html = `
       <html>
@@ -311,7 +303,7 @@ export default function ResiduosScreen() {
               </tr>
             </thead>
             <tbody>
-              ${filteredEntries
+                ${selectedEntries
                 .map(
                   (e) => `
                 <tr>
@@ -336,11 +328,10 @@ export default function ResiduosScreen() {
   };
 
   const allChecked =
-    filteredEntries.length > 0 &&
-    filteredEntries.every((e) => selected.includes(e.id));
+   entries.length > 0 && entries.every((e) => selected.includes(e.id));
 
   const toggleAll = () => {
-    setSelected(allChecked ? [] : filteredEntries.map((en) => en.id));
+    setSelected(allChecked ? [] : entries.map((en) => en.id));
   };
 
   if (![1, 2].includes(usuario?.rol_id)) {
@@ -526,34 +517,24 @@ export default function ResiduosScreen() {
             <View style={styles.sectionHeader}>
               <Ionicons name="list-outline" size={24} color="#ffffff" />
               <Text style={styles.sectionTitle}>Historial de Registros</Text>
-              <Text style={styles.countBadge}>{filteredEntries.length}</Text>
+             <Text style={styles.countBadge}>{entries.length}</Text>
             </View>
 
-            {/* Filters and Actions */}
-            <View style={styles.actions}>
-              <View style={styles.dateFilters}>
-               <View style={{ flex: 1 }}>
-                  <Text style={styles.rangeLabel}>Desde</Text>
-                  <WeekDateSelector date={fromDate} onSelect={setFromDate} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rangeLabel}>Hasta</Text>
-                  <WeekDateSelector date={toDate} onSelect={setToDate} />
-                </View>
-              </View>
-              <View style={styles.actionButtons}>
+           {/* Actions */}
+              <View style={styles.actions}>
+                <View style={styles.actionButtons}>
                 <TouchableOpacity
-                  style={[styles.actionButton, filteredEntries.length === 0 && styles.disabledButton]}
+                  style={[styles.actionButton, selected.length === 0 && styles.disabledButton]}
                   onPress={handleDownloadCSV}
-                  disabled={filteredEntries.length === 0}
+                  disabled={selected.length === 0}
                 >
                   <Ionicons name="document-text-outline" size={20} color="#ffffff" />
                   <Text style={styles.actionText}>CSV</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionButton, filteredEntries.length === 0 && styles.disabledButton]}
+                 style={[styles.actionButton, selected.length === 0 && styles.disabledButton]}
                   onPress={handleDownloadPDF}
-                  disabled={filteredEntries.length === 0}
+                 disabled={selected.length === 0}
                 >
                   <Ionicons name="document-outline" size={20} color="#ffffff" />
                   <Text style={styles.actionText}>PDF</Text>
@@ -572,60 +553,14 @@ export default function ResiduosScreen() {
               </View>
             </View>
 
-            {filteredEntries.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="mail-open-outline" size={64} color="#94a3b8" />
-                <Text style={styles.emptyTitle}>No hay residuos registrados aún.</Text>
-                <Text style={styles.emptySubtitle}>Comienza registrando tu primer residuo</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={filteredEntries}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => (
-                  <View style={[styles.card, { width: isTablet ? '80%' : '100%', alignSelf: 'center' }]}>
-                    <TouchableOpacity
-                      style={styles.checkbox}
-                      onPress={() => toggleSelect(item.id)}
-                    >
-                      <Ionicons
-                        name={selected.includes(item.id) ? 'checkbox' : 'square-outline'}
-                        size={24}
-                        color="#3b82f6"
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.cardContent}>
-                      <View style={styles.cardRow}>
-                        <Ionicons name="calendar-outline" size={20} color="#4b5563" />
-                        <Text style={styles.cardText}>{formatDate(item.fecha)}</Text>
-                      </View>
-                      <View style={styles.cardRow}>
-                        <Ionicons name="business-outline" size={20} color="#4b5563" />
-                        <Text style={styles.cardText}>{item.laboratorio}</Text>
-                      </View>
-                      <View style={styles.cardRow}>
-                        <Ionicons name="flask-outline" size={20} color="#4b5563" />
-                        <Text style={styles.cardBoldText}>{item.reactivo}</Text>
-                      </View>
-                      <View style={styles.cardRow}>
-                        <Ionicons name={getTipoIcon(item.tipo) as React.ComponentProps<typeof Ionicons>['name']} size={20} color={getTipoColor(item.tipo)} />
-                        <Text style={[styles.cardBoldText, { color: getTipoColor(item.tipo) }]}>
-                          {getTipoLabel(item.tipo)}
-                        </Text>
-                      </View>
-                      <View style={styles.cardRow}>
-                        <Ionicons name="scale-outline" size={20} color="#4b5563" />
-                        <Text style={styles.cardBoldText}>{Number(item.cantidad).toFixed(2)}</Text>
-                      </View>
-                      <View style={styles.cardRow}>
-                        <Ionicons name="resize-outline" size={20} color="#4b5563" />
-                        <Text style={styles.cardText}>{item.unidad}</Text>
-                      </View>
-                    </View>
-                  </View>
-                )}
-                contentContainerStyle={styles.listContent}
-                ListHeaderComponent={
+             {entries.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="mail-open-outline" size={64} color="#94a3b8" />
+                  <Text style={styles.emptyTitle}>No hay residuos registrados aún.</Text>
+                  <Text style={styles.emptySubtitle}>Comienza registrando tu primer residuo</Text>
+                </View>
+              ) : (
+                <View style={styles.listContent}>
                   <TouchableOpacity style={styles.selectAll} onPress={toggleAll}>
                     <Ionicons
                       name={allChecked ? 'checkbox' : 'square-outline'}
@@ -634,15 +569,56 @@ export default function ResiduosScreen() {
                     />
                     <Text style={styles.selectAllText}>Seleccionar Todo</Text>
                   </TouchableOpacity>
-                }
-              />
-            )}
-          </View>
-        </ScrollView>
-      </LinearGradient>
-    </SafeAreaView>
-  );
-}
+               {entries.map((item) => (
+                    <View key={item.id} style={[styles.card, { width: isTablet ? '80%' : '100%', alignSelf: 'center' }]}>
+                      <TouchableOpacity
+                        style={styles.checkbox}
+                        onPress={() => toggleSelect(item.id)}
+                      >
+                        <Ionicons
+                          name={selected.includes(item.id) ? 'checkbox' : 'square-outline'}
+                          size={24}
+                          color="#3b82f6"
+                        />
+                      </TouchableOpacity>
+                      <View style={styles.cardContent}>
+                        <View style={styles.cardRow}>
+                          <Ionicons name="calendar-outline" size={20} color="#4b5563" />
+                          <Text style={styles.cardText}>{formatDate(item.fecha)}</Text>
+                        </View>
+                        <View style={styles.cardRow}>
+                          <Ionicons name="business-outline" size={20} color="#4b5563" />
+                          <Text style={styles.cardText}>{item.laboratorio}</Text>
+                        </View>
+                        <View style={styles.cardRow}>
+                          <Ionicons name="flask-outline" size={20} color="#4b5563" />
+                          <Text style={styles.cardBoldText}>{item.reactivo}</Text>
+                        </View>
+                        <View style={styles.cardRow}>
+                          <Ionicons name={getTipoIcon(item.tipo) as React.ComponentProps<typeof Ionicons>['name']} size={20} color={getTipoColor(item.tipo)} />
+                          <Text style={[styles.cardBoldText, { color: getTipoColor(item.tipo) }]}>
+                            {getTipoLabel(item.tipo)}
+                          </Text>
+                        </View>
+                        <View style={styles.cardRow}>
+                          <Ionicons name="scale-outline" size={20} color="#4b5563" />
+                          <Text style={styles.cardBoldText}>{Number(item.cantidad).toFixed(2)}</Text>
+                        </View>
+                        <View style={styles.cardRow}>
+                          <Ionicons name="resize-outline" size={20} color="#4b5563" />
+                          <Text style={styles.cardText}>{item.unidad}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+            </ScrollView>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -774,17 +750,6 @@ const styles = StyleSheet.create({
   },
   actions: {
     marginBottom: 16,
-  },
-  dateFilters: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
-  },
- rangeLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#4b5563',
-    marginBottom: 8,
   },
   actionButtons: {
     flexDirection: 'row',
