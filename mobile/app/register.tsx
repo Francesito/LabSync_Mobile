@@ -216,6 +216,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+      backgroundColor: '#fff',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
   groupContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     width: '100%',
   },
   groupButton: {
@@ -306,8 +307,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 8,
     borderRadius: 4,
-    margin: 4,
-    width: (Dimensions.get('window').width * 0.9 - 32 - 8 * 2) / 3, // 3 buttons per row, accounting for padding and margins
+     marginBottom: 8,
+    flexBasis: '30%', // 3 buttons per row
+    maxWidth: '30%',
     alignItems: 'center',
   },
   groupButtonActive: {
