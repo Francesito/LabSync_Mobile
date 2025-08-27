@@ -21,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth'; // Assuming this is adapted for React Native
 import { API_URL } from '@/constants/api';
+import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android') {
@@ -123,7 +124,8 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const { width, height } = useWindowDimensions(); // For responsiveness
   const isTablet = width > 600;
-    const [inputHeight, setInputHeight] = useState(0);
+  const [inputHeight, setInputHeight] = useState(0);
+  const bottom = useBottomTabOverflow();
 
   // Verificar permisos de chat al cargar el componente
   useEffect(() => {
@@ -445,6 +447,7 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+           keyboardVerticalOffset={bottom}
         style={styles.container}
       >
         <LinearGradient colors={['#f3f4f6', '#f3f4f6']} style={styles.container}>
@@ -499,12 +502,18 @@ export default function ChatScreen() {
                     </View>
                   );
                 }}
-               contentContainerStyle={[styles.messageListContent, { paddingBottom: inputHeight }]}
+                 contentContainerStyle={[
+                  styles.messageListContent,
+                  { paddingBottom: inputHeight + bottom },
+                ]}
                 onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
               />
 
               {/* Message Input */}
-               <View style={styles.inputContainer} onLayout={(e) => setInputHeight(e.nativeEvent.layout.height)}>
+               <View
+                style={[styles.inputContainer, { marginBottom: bottom }]}
+                onLayout={(e) => setInputHeight(e.nativeEvent.layout.height)}
+              >
                 <TextInput
                   style={styles.input}
                   placeholder="Escribe un mensaje..."
@@ -585,7 +594,7 @@ export default function ChatScreen() {
                     </View>
                   </TouchableOpacity>
                 )}
-                contentContainerStyle={styles.listContent}
+                   contentContainerStyle={[styles.listContent, { paddingBottom: bottom }]}
               />
             </View>
           )}
