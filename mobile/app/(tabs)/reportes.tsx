@@ -333,9 +333,14 @@ export default function ReportesScreen() {
 
   if (![3, 4].includes(usuario?.rol_id)) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Acceso denegado</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient colors={['#f9fafb', '#f3f4f6']} style={styles.container}>
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={24} color="#ef4444" style={styles.errorIcon} />
+            <Text style={styles.errorText}>Acceso denegado</Text>
+          </View>
+        </LinearGradient>
+      </SafeAreaView>
     );
   }
 
@@ -346,187 +351,209 @@ export default function ReportesScreen() {
           <ActivityIndicator size="large" color="#3b82f6" style={styles.loading} />
         ) : (
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            <Text style={[styles.title, { fontSize: isTablet ? 32 : 24 }]}>Reportes</Text>
+            <Text style={[styles.title, { fontSize: isTablet ? 28 : 20 }]}>Reportes</Text>
 
-            <View style={styles.row}>
-              {/* Historial de Residuos */}
-              <View style={[styles.card, { flex: isTablet ? 0.3 : 1 }]}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>Historial de Residuos</Text>
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Grupo, Nombre..."
-                    value={searchHistorial}
-                    onChangeText={setSearchHistorial}
-                  />
+            {/* Historial de Residuos */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleContainer}>
+                  <Ionicons name="trash-outline" size={20} color="#3b82f6" style={styles.icon} />
+                  <Text style={[styles.cardTitle, { color: '#3b82f6' }]}>Historial de Residuos</Text>
                 </View>
-                {filteredHistorial.length === 0 ? (
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Grupo, Nombre..."
+                  value={searchHistorial}
+                  onChangeText={setSearchHistorial}
+                />
+              </View>
+              {filteredHistorial.length === 0 ? (
+                <View style={styles.noDataContainer}>
+                  <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
                   <Text style={styles.noData}>No hay registros.</Text>
-                ) : (
-                  <>
-                    <View>
-                      <View style={styles.tableHeader}>
-                        <Text style={styles.tableHeaderCell}>Nombre</Text>
-                        <Text style={styles.tableHeaderCell}>Grupo</Text>
-                        <Text style={styles.tableHeaderCell}>Acciones</Text>
-                      </View>
-                      {filteredHistorial.slice(0, 5).map((h, idx) => (
-                        <View style={styles.tableRow} key={idx}>
-                          <Text style={styles.tableCell}>{h.nombre}</Text>
-                          <Text style={styles.tableCell}>{h.grupo}</Text>
-                          <View style={styles.actionButtons}>
-                            <TouchableOpacity onPress={() => downloadHistorialCSV(h.registros, h.nombre)}>
-                              <Ionicons name="download-outline" size={20} color="#3b82f6" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => downloadHistorialPDF(h.registros, h.nombre)}>
-                              <Ionicons name="document-text-outline" size={20} color="#22c55e" />
-                            </TouchableOpacity>
-                          </View>
+                </View>
+              ) : (
+                <>
+                  <View>
+                    <View style={[styles.tableHeader, { backgroundColor: '#3b82f6' }]}>
+                      <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Nombre</Text>
+                      <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Grupo</Text>
+                      <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Acciones</Text>
+                    </View>
+                    {filteredHistorial.slice(0, 5).map((h, idx) => (
+                      <View style={styles.tableRow} key={idx}>
+                        <Text style={styles.tableCell}>{h.nombre}</Text>
+                        <Text style={styles.tableCell}>{h.grupo}</Text>
+                        <View style={styles.actionButtons}>
+                          <TouchableOpacity onPress={() => downloadHistorialCSV(h.registros, h.nombre)}>
+                            <Ionicons name="download-outline" size={20} color="#3b82f6" />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => downloadHistorialPDF(h.registros, h.nombre)}>
+                            <Ionicons name="document-text-outline" size={20} color="#22c55e" />
+                          </TouchableOpacity>
                         </View>
-                        ))}
-                    </View>
-                    {filteredHistorial.length > 5 && (
-                      <TouchableOpacity style={styles.showMore} onPress={() => setShowHistorialModal(true)}>
-                        <Text style={styles.showMoreText}>Mostrar más</Text>
-                      </TouchableOpacity>
-                    )}
-                  </>
-                )}
-              </View>
-
-              {/* Grupos con Adeudos */}
-              <View style={[styles.card, { flex: isTablet ? 0.3 : 1 }]}>
-                <Text style={styles.cardTitle}>Grupos con Adeudos</Text>
-                {grupos.length === 0 ? (
-                  <Text style={styles.noData}>No hay grupos.</Text>
-                ) : (
-                  <>
-                    <View>
-                      <View style={styles.tableHeader}>
-                        <Text style={styles.tableHeaderCell}>Nombre</Text>
                       </View>
-                      {grupos.slice(0, 5).map((g, idx) => (
-                        <TouchableOpacity
-                          key={idx}
-                          style={styles.tableRow}
-                          onPress={() => setGrupoDetalle(g)}
-                        >
-                          <Text style={styles.tableCell}>{g.nombre}</Text>
-                        </TouchableOpacity>
-                       ))}
-                    </View>
-                    {grupos.length > 5 && (
-                      <TouchableOpacity style={styles.showMore} onPress={() => setShowGruposModal(true)}>
-                        <Text style={styles.showMoreText}>Mostrar más</Text>
-                      </TouchableOpacity>
-                    )}
-                  </>
-                )}
-              </View>
-
-              {/* Adeudos del Grupo Seleccionado */}
-              <View style={[styles.card, { flex: isTablet ? 0.3 : 1 }]}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>
-                    {grupoDetalle ? `Adeudos de ${grupoDetalle.nombre}` : 'Adeudos del Grupo Seleccionado'}
-                  </Text>
-                  {grupoDetalle && grupoDetalle.adeudos.length > 0 && (
-                    <TouchableOpacity onPress={downloadAdeudosPDF}>
-                      <Ionicons name="download-outline" size={20} color="#ef4444" />
+                    ))}
+                  </View>
+                  {filteredHistorial.length > 5 && (
+                    <TouchableOpacity style={styles.showMore} onPress={() => setShowHistorialModal(true)}>
+                      <Ionicons name="chevron-down-outline" size={16} color="#3b82f6" style={styles.icon} />
+                      <Text style={styles.showMoreText}>Mostrar más</Text>
                     </TouchableOpacity>
                   )}
+                </>
+              )}
+            </View>
+
+            {/* Grupos con Adeudos */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleContainer}>
+                  <Ionicons name="people-outline" size={20} color="#14b8a6" style={styles.icon} />
+                  <Text style={[styles.cardTitle, { color: '#14b8a6' }]}>Grupos con Adeudos</Text>
                 </View>
-                {grupoDetalle ? (
-                  grupoDetalle.adeudos.length === 0 ? (
-                    <Text style={styles.noData}>Sin adeudos</Text>
-                  ) : (
-                    <>
-                     <View>
-                        <View style={styles.tableHeader}>
-                          <Text style={styles.tableHeaderCell}>Cantidad</Text>
-                          <Text style={styles.tableHeaderCell}>Material</Text>
-                          <Text style={styles.tableHeaderCell}>Solicitante</Text>
-                        </View>
-                        {grupoDetalle.adeudos.slice(0, 5).map((a, idx) => (
-                          <View style={styles.tableRow} key={idx}>
-                            <Text style={styles.tableCell}>
-                              {a.cantidad} {a.unidad}
-                            </Text>
-                            <Text style={styles.tableCell}>{a.nombre_material}</Text>
-                            <Text style={styles.tableCell}>{a.solicitante}</Text>
-                          </View>
-                      ))}
-                      </View>
-                      {grupoDetalle.adeudos.length > 5 && (
-                       <TouchableOpacity
-                          style={styles.showMore}
-                          onPress={() => setShowGrupoAdeudosModal(true)}
-                        >
-                          <Text style={styles.showMoreText}>Ver más</Text>
-                        </TouchableOpacity>
-                      )}
-                    </>
-                  )
-                ) : (
-                  <Text style={styles.noData}>Selecciona un grupo para ver los adeudos</Text>
+              </View>
+              {grupos.length === 0 ? (
+                <View style={styles.noDataContainer}>
+                  <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
+                  <Text style={styles.noData}>No hay grupos.</Text>
+                </View>
+              ) : (
+                <>
+                  <View>
+                    <View style={[styles.tableHeader, { backgroundColor: '#14b8a6' }]}>
+                      <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Nombre</Text>
+                    </View>
+                    {grupos.slice(0, 5).map((g, idx) => (
+                      <TouchableOpacity
+                        key={idx}
+                        style={[styles.tableRow, grupoDetalle?.nombre === g.nombre ? styles.tableRowActive : null]}
+                        onPress={() => setGrupoDetalle(g)}
+                      >
+                        <Text style={styles.tableCell}>{g.nombre}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  {grupos.length > 5 && (
+                    <TouchableOpacity style={styles.showMore} onPress={() => setShowGruposModal(true)}>
+                      <Ionicons name="chevron-down-outline" size={16} color="#3b82f6" style={styles.icon} />
+                      <Text style={styles.showMoreText}>Mostrar más</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </View>
+
+            {/* Adeudos del Grupo Seleccionado */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleContainer}>
+                  <Ionicons name="list-outline" size={20} color="#14b8a6" style={styles.icon} />
+                  <Text style={[styles.cardTitle, { color: '#14b8a6' }]}>
+                    {grupoDetalle ? `Adeudos de ${grupoDetalle.nombre}` : 'Adeudos del Grupo Seleccionado'}
+                  </Text>
+                </View>
+                {grupoDetalle && grupoDetalle.adeudos.length > 0 && (
+                  <TouchableOpacity onPress={downloadAdeudosPDF}>
+                    <Ionicons name="document-text-outline" size={20} color="#ef4444" />
+                  </TouchableOpacity>
                 )}
               </View>
+              {grupoDetalle ? (
+                grupoDetalle.adeudos.length === 0 ? (
+                  <View style={styles.noDataContainer}>
+                    <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
+                    <Text style={styles.noData}>Sin adeudos</Text>
+                  </View>
+                ) : (
+                  <>
+                    <View>
+                      <View style={[styles.tableHeader, { backgroundColor: '#14b8a6' }]}>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Cantidad</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Material</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Solicitante</Text>
+                      </View>
+                      {grupoDetalle.adeudos.slice(0, 5).map((a, idx) => (
+                        <View style={styles.tableRow} key={idx}>
+                          <Text style={styles.tableCell}>{a.cantidad} {a.unidad}</Text>
+                          <Text style={styles.tableCell}>{a.nombre_material}</Text>
+                          <Text style={styles.tableCell}>{a.solicitante}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    {grupoDetalle.adeudos.length > 5 && (
+                      <TouchableOpacity style={styles.showMore} onPress={() => setShowGrupoAdeudosModal(true)}>
+                        <Ionicons name="chevron-down-outline" size={16} color="#3b82f6" style={styles.icon} />
+                        <Text style={styles.showMoreText}>Ver más</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )
+              ) : (
+                <View style={styles.noDataContainer}>
+                  <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
+                  <Text style={styles.noData}>Selecciona un grupo para ver los adeudos</Text>
+                </View>
+              )}
             </View>
 
             {/* Inventario Reactivos Líquidos */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>Inventario Reactivos Líquidos</Text>
-                <TouchableOpacity onPress={downloadInventarioLiquidosPDF} disabled={filteredLiquidos.length === 0}>
-                  <Ionicons name="download-outline" size={20} color="#ef4444" />
-                </TouchableOpacity>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Reactivo..."
-                  value={searchLiquidos}
-                  onChangeText={setSearchLiquidos}
-                />
+                <View style={styles.cardTitleContainer}>
+                  <Ionicons name="water-outline" size={20} color="#06b6d4" style={styles.icon} />
+                  <Text style={[styles.cardTitle, { color: '#06b6d4' }]}>Inventario Reactivos Líquidos</Text>
+                </View>
+                <View style={styles.cardHeaderActions}>
+                  <TouchableOpacity onPress={downloadInventarioLiquidosPDF} disabled={filteredLiquidos.length === 0}>
+                    <Ionicons name="document-text-outline" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Reactivo..."
+                    value={searchLiquidos}
+                    onChangeText={setSearchLiquidos}
+                  />
+                </View>
               </View>
               {filteredLiquidos.length === 0 ? (
-                <Text style={styles.noData}>No hay registros.</Text>
+                <View style={styles.noDataContainer}>
+                  <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
+                  <Text style={styles.noData}>No hay registros.</Text>
+                </View>
               ) : (
                 <>
                   <ScrollView horizontal>
                     <View>
-                      <View style={styles.tableHeader}>
-                        <Text style={styles.tableHeaderCell}>Reactivo</Text>
-                        <Text style={styles.tableHeaderCell}>Cantidad</Text>
+                      <View style={[styles.tableHeader, { backgroundColor: '#06b6d4' }]}>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Reactivo</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Cantidad</Text>
                         {inventarioLiquidos.meses.map((m) => (
-                          <Text key={m} style={styles.tableHeaderCell}>
+                          <Text key={m} style={[styles.tableHeaderCell, { color: '#ffffff' }]}>
                             {m}
                           </Text>
                         ))}
-                        <Text style={styles.tableHeaderCell}>Existencia Final</Text>
-                        <Text style={styles.tableHeaderCell}>Total</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Existencia Final</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Total</Text>
                       </View>
                       {filteredLiquidos.slice(0, 5).map((r, idx) => (
                         <View style={styles.tableRow} key={idx}>
                           <Text style={styles.tableCell}>{r.nombre.replace(/_/g, ' ')}</Text>
-                          <Text style={styles.tableCell}>
-                            {r.cantidad_inicial} {r.unidad}
-                          </Text>
+                          <Text style={styles.tableCell}>{r.cantidad_inicial} {r.unidad}</Text>
                           {inventarioLiquidos.meses.map((m) => (
                             <Text key={m} style={styles.tableCell}>
                               {r.consumos[m] || 0}
                             </Text>
                           ))}
-                         <Text style={styles.tableCell}>
-                            {r.existencia_final} {r.unidad}
-                          </Text>
-                          <Text style={styles.tableCell}>
-                            {r.total_consumido} {r.unidad}
-                          </Text>
+                          <Text style={styles.tableCell}>{r.existencia_final} {r.unidad}</Text>
+                          <Text style={styles.tableCell}>{r.total_consumido} {r.unidad}</Text>
                         </View>
-                     ))}
+                      ))}
                     </View>
                   </ScrollView>
                   {filteredLiquidos.length > 5 && (
                     <TouchableOpacity style={styles.showMore} onPress={() => setShowLiquidosModal(true)}>
+                      <Ionicons name="chevron-down-outline" size={16} color="#3b82f6" style={styles.icon} />
                       <Text style={styles.showMoreText}>Mostrar más</Text>
                     </TouchableOpacity>
                   )}
@@ -537,57 +564,60 @@ export default function ReportesScreen() {
             {/* Inventario Reactivos Sólidos */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>Inventario Reactivos Sólidos</Text>
-                <TouchableOpacity onPress={downloadInventarioSolidosPDF} disabled={filteredSolidos.length === 0}>
-                  <Ionicons name="download-outline" size={20} color="#ef4444" />
-                </TouchableOpacity>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Reactivo..."
-                  value={searchSolidos}
-                  onChangeText={setSearchSolidos}
-                />
+                <View style={styles.cardTitleContainer}>
+                  <Ionicons name="cube-outline" size={20} color="#8b5cf6" style={styles.icon} />
+                  <Text style={[styles.cardTitle, { color: '#8b5cf6' }]}>Inventario Reactivos Sólidos</Text>
+                </View>
+                <View style={styles.cardHeaderActions}>
+                  <TouchableOpacity onPress={downloadInventarioSolidosPDF} disabled={filteredSolidos.length === 0}>
+                    <Ionicons name="document-text-outline" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Reactivo..."
+                    value={searchSolidos}
+                    onChangeText={setSearchSolidos}
+                  />
+                </View>
               </View>
               {filteredSolidos.length === 0 ? (
-                <Text style={styles.noData}>No hay registros.</Text>
+                <View style={styles.noDataContainer}>
+                  <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
+                  <Text style={styles.noData}>No hay registros.</Text>
+                </View>
               ) : (
                 <>
                   <ScrollView horizontal>
                     <View>
-                      <View style={styles.tableHeader}>
-                        <Text style={styles.tableHeaderCell}>Reactivo</Text>
-                        <Text style={styles.tableHeaderCell}>Cantidad</Text>
+                      <View style={[styles.tableHeader, { backgroundColor: '#8b5cf6' }]}>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Reactivo</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Cantidad</Text>
                         {inventarioSolidos.meses.map((m) => (
-                          <Text key={m} style={styles.tableHeaderCell}>
+                          <Text key={m} style={[styles.tableHeaderCell, { color: '#ffffff' }]}>
                             {m}
                           </Text>
                         ))}
-                        <Text style={styles.tableHeaderCell}>Existencia Final</Text>
-                        <Text style={styles.tableHeaderCell}>Total</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Existencia Final</Text>
+                        <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Total</Text>
                       </View>
                       {filteredSolidos.slice(0, 5).map((r, idx) => (
                         <View style={styles.tableRow} key={idx}>
                           <Text style={styles.tableCell}>{r.nombre.replace(/_/g, ' ')}</Text>
-                         <Text style={styles.tableCell}>
-                            {r.cantidad_inicial} {r.unidad}
-                          </Text>
+                          <Text style={styles.tableCell}>{r.cantidad_inicial} {r.unidad}</Text>
                           {inventarioSolidos.meses.map((m) => (
                             <Text key={m} style={styles.tableCell}>
                               {r.consumos[m] || 0}
                             </Text>
                           ))}
-                        <Text style={styles.tableCell}>
-                            {r.existencia_final} {r.unidad}
-                          </Text>
-                          <Text style={styles.tableCell}>
-                            {r.total_consumido} {r.unidad}
-                          </Text>
+                          <Text style={styles.tableCell}>{r.existencia_final} {r.unidad}</Text>
+                          <Text style={styles.tableCell}>{r.total_consumido} {r.unidad}</Text>
                         </View>
                       ))}
                     </View>
                   </ScrollView>
                   {filteredSolidos.length > 5 && (
                     <TouchableOpacity style={styles.showMore} onPress={() => setShowSolidosModal(true)}>
+                      <Ionicons name="chevron-down-outline" size={16} color="#3b82f6" style={styles.icon} />
                       <Text style={styles.showMoreText}>Mostrar más</Text>
                     </TouchableOpacity>
                   )}
@@ -598,7 +628,7 @@ export default function ReportesScreen() {
         )}
       </LinearGradient>
 
-      {/* Modales */}
+      {/* Modal Historial de Residuos */}
       <Modal
         visible={showHistorialModal}
         animationType="slide"
@@ -606,18 +636,24 @@ export default function ReportesScreen() {
         onRequestClose={() => setShowHistorialModal(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { maxWidth: isTablet ? '80%' : '90%' }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Historial de Residuos</Text>
+              <View style={styles.cardTitleContainer}>
+                <Ionicons name="trash-outline" size={20} color="#3b82f6" style={styles.icon} />
+                <Text style={[styles.modalTitle, { color: '#3b82f6' }]}>Historial de Residuos</Text>
+              </View>
               <TouchableOpacity onPress={() => setShowHistorialModal(false)}>
                 <Ionicons name="close" size={24} color="#ef4444" />
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={filteredHistorial}
-              keyExtractor={(_, idx) => idx.toString()}
-              renderItem={({ item: h }) => (
-                <View style={styles.tableRow}>
+            <View>
+              <View style={[styles.tableHeader, { backgroundColor: '#3b82f6' }]}>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Nombre</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Grupo</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Acciones</Text>
+              </View>
+              {filteredHistorial.map((h, idx) => (
+                <View style={styles.tableRow} key={idx}>
                   <Text style={styles.tableCell}>{h.nombre}</Text>
                   <Text style={styles.tableCell}>{h.grupo}</Text>
                   <View style={styles.actionButtons}>
@@ -629,19 +665,13 @@ export default function ReportesScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-              )}
-              ListHeaderComponent={
-                <View style={styles.tableHeader}>
-                  <Text style={styles.tableHeaderCell}>Nombre</Text>
-                  <Text style={styles.tableHeaderCell}>Grupo</Text>
-                  <Text style={styles.tableHeaderCell}>Acciones</Text>
-                </View>
-              }
-            />
+              ))}
+            </View>
           </View>
         </View>
       </Modal>
 
+      {/* Modal Grupos */}
       <Modal
         visible={showGruposModal}
         animationType="slide"
@@ -649,34 +679,38 @@ export default function ReportesScreen() {
         onRequestClose={() => setShowGruposModal(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { maxWidth: isTablet ? '80%' : '90%' }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Grupos</Text>
+              <View style={styles.cardTitleContainer}>
+                <Ionicons name="people-outline" size={20} color="#14b8a6" style={styles.icon} />
+                <Text style={[styles.modalTitle, { color: '#14b8a6' }]}>Grupos</Text>
+              </View>
               <TouchableOpacity onPress={() => setShowGruposModal(false)}>
                 <Ionicons name="close" size={24} color="#ef4444" />
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={grupos}
-              keyExtractor={(_, idx) => idx.toString()}
-              renderItem={({ item: g }) => (
-                <TouchableOpacity style={styles.tableRow} onPress={() => {
-                  setGrupoDetalle(g);
-                  setShowGruposModal(false);
-                }}>
+            <View>
+              <View style={[styles.tableHeader, { backgroundColor: '#14b8a6' }]}>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Nombre</Text>
+              </View>
+              {grupos.map((g, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.tableRow}
+                  onPress={() => {
+                    setGrupoDetalle(g);
+                    setShowGruposModal(false);
+                  }}
+                >
                   <Text style={styles.tableCell}>{g.nombre}</Text>
                 </TouchableOpacity>
-              )}
-              ListHeaderComponent={
-                <View style={styles.tableHeader}>
-                  <Text style={styles.tableHeaderCell}>Nombre</Text>
-                </View>
-              }
-            />
+              ))}
+            </View>
           </View>
         </View>
       </Modal>
 
+      {/* Modal Adeudos del Grupo */}
       <Modal
         visible={showGrupoAdeudosModal}
         animationType="slide"
@@ -684,135 +718,152 @@ export default function ReportesScreen() {
         onRequestClose={() => setShowGrupoAdeudosModal(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { maxWidth: isTablet ? '80%' : '90%' }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{grupoDetalle?.nombre}</Text>
+              <View style={styles.cardTitleContainer}>
+                <Ionicons name="list-outline" size={20} color="#14b8a6" style={styles.icon} />
+                <Text style={[styles.modalTitle, { color: '#14b8a6' }]}>{grupoDetalle?.nombre}</Text>
+              </View>
               <TouchableOpacity onPress={() => setShowGrupoAdeudosModal(false)}>
                 <Ionicons name="close" size={24} color="#ef4444" />
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={grupoDetalle?.adeudos || []}
-              keyExtractor={(_, idx) => idx.toString()}
-              renderItem={({ item: a }) => (
-                <View style={styles.tableRow}>
+            <View>
+              <View style={[styles.tableHeader, { backgroundColor: '#14b8a6' }]}>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Cantidad</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Material</Text>
+                <Text style={[styles.tableHeaderCell, { color: '#ffffff' }]}>Solicitante</Text>
+              </View>
+              {grupoDetalle?.adeudos.map((a, idx) => (
+                <View style={styles.tableRow} key={idx}>
                   <Text style={styles.tableCell}>{a.cantidad} {a.unidad}</Text>
                   <Text style={styles.tableCell}>{a.nombre_material}</Text>
                   <Text style={styles.tableCell}>{a.solicitante}</Text>
                 </View>
-              )}
-              ListHeaderComponent={
-                <View style={styles.tableHeader}>
-                  <Text style={styles.tableHeaderCell}>Cantidad</Text>
-                  <Text style={styles.tableHeaderCell}>Material</Text>
-                  <Text style={styles.tableHeaderCell}>Solicitante</Text>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+     {/* Modal Inventario Reactivos Líquidos */}
+<Modal
+  visible={showLiquidosModal}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={() => setShowLiquidosModal(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={[styles.modalContent, { maxWidth: isTablet ? '80%' : '90%' }]}>
+      <View style={styles.modalHeader}>
+        <View style={styles.cardTitleContainer}>
+          <Ionicons name="water-outline" size={20} color="#06b6d4" style={styles.icon} />
+          <Text style={[styles.modalTitle, { color: '#06b6d4' }]}>Inventario Reactivos Líquidos</Text>
+        </View>
+        <TouchableOpacity onPress={() => setShowLiquidosModal(false)}>
+          <Ionicons name="close" size={24} color="#ef4444" />
+        </TouchableOpacity>
+      </View>
+      <ScrollView horizontal>
+        <ScrollView>
+          <View>
+            <View style={[styles.tableHeader, { backgroundColor: '#06b6d4' }]}>
+              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 150 }]}>Reactivo</Text>
+              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Cantidad</Text>
+              {inventarioLiquidos.meses.map((m) => (
+                <Text key={m} style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>
+                  {m}
+                </Text>
+              ))}
+              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Existencia Final</Text>
+              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Total</Text>
+            </View>
+            {filteredLiquidos.length === 0 ? (
+              <View style={styles.noDataContainer}>
+                <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
+                <Text style={styles.noData}>No hay registros.</Text>
+              </View>
+            ) : (
+              filteredLiquidos.map((r, idx) => (
+                <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
+                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 150 }]}>{r.nombre.replace(/_/g, ' ')}</Text>
+                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.cantidad_inicial} {r.unidad}</Text>
+                  {inventarioLiquidos.meses.map((m) => (
+                    <Text key={m} style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>
+                      {r.consumos[m] || 0}
+                    </Text>
+                  ))}
+                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.existencia_final} {r.unidad}</Text>
+                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.total_consumido} {r.unidad}</Text>
                 </View>
-              }
-            />
+              ))
+            )}
           </View>
-        </View>
-      </Modal>
+        </ScrollView>
+      </ScrollView>
+    </View>
+  </View>
+</Modal>
 
-      <Modal
-        visible={showLiquidosModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowLiquidosModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Inventario Reactivos Líquidos</Text>
-              <TouchableOpacity onPress={() => setShowLiquidosModal(false)}>
-                <Ionicons name="close" size={24} color="#ef4444" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView horizontal>
-              <FlatList
-                data={filteredLiquidos}
-                keyExtractor={(_, idx) => idx.toString()}
-                renderItem={({ item: r }) => (
-                  <View style={styles.tableRow}>
-                    <Text style={styles.tableCell}>{r.nombre.replace(/_/g, ' ')}</Text>
-                    <Text style={styles.tableCell}>{r.cantidad_inicial} {r.unidad}</Text>
-                    {inventarioLiquidos.meses.map((m) => (
-                      <Text key={m} style={styles.tableCell}>
-                        {r.consumos[m] || 0}
-                      </Text>
-                    ))}
-                    <Text style={styles.tableCell}>{r.existencia_final} {r.unidad}</Text>
-                    <Text style={styles.tableCell}>{r.total_consumido} {r.unidad}</Text>
-                  </View>
-                )}
-                ListHeaderComponent={
-                  <View style={styles.tableHeader}>
-                    <Text style={styles.tableHeaderCell}>Reactivo</Text>
-                    <Text style={styles.tableHeaderCell}>Cantidad</Text>
-                    {inventarioLiquidos.meses.map((m) => (
-                      <Text key={m} style={styles.tableHeaderCell}>
-                        {m}
-                      </Text>
-                    ))}
-                    <Text style={styles.tableHeaderCell}>Existencia Final</Text>
-                    <Text style={styles.tableHeaderCell}>Total</Text>
-                  </View>
-                }
-              />
-            </ScrollView>
-          </View>
+{/* Modal Inventario Reactivos Sólidos */}
+<Modal
+  visible={showSolidosModal}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={() => setShowSolidosModal(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={[styles.modalContent, { maxWidth: isTablet ? '80%' : '90%' }]}>
+      <View style={styles.modalHeader}>
+        <View style={styles.cardTitleContainer}>
+          <Ionicons name="cube-outline" size={20} color="#8b5cf6" style={styles.icon} />
+          <Text style={[styles.modalTitle, { color: '#8b5cf6' }]}>Inventario Reactivos Sólidos</Text>
         </View>
-      </Modal>
-
-      <Modal
-        visible={showSolidosModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowSolidosModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Inventario Reactivos Sólidos</Text>
-              <TouchableOpacity onPress={() => setShowSolidosModal(false)}>
-                <Ionicons name="close" size={24} color="#ef4444" />
-              </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowSolidosModal(false)}>
+          <Ionicons name="close" size={24} color="#ef4444" />
+        </TouchableOpacity>
+      </View>
+      <ScrollView horizontal>
+        <ScrollView>
+          <View>
+            <View style={[styles.tableHeader, { backgroundColor: '#8b5cf6' }]}>
+              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 150 }]}>Reactivo</Text>
+              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Cantidad</Text>
+              {inventarioSolidos.meses.map((m) => (
+                <Text key={m} style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>
+                  {m}
+                </Text>
+              ))}
+              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Existencia Final</Text>
+              <Text style={[styles.tableHeaderCell, styles.tableCellBorder, { color: '#ffffff', minWidth: 100 }]}>Total</Text>
             </View>
-            <ScrollView horizontal>
-              <FlatList
-                data={filteredSolidos}
-                keyExtractor={(_, idx) => idx.toString()}
-                renderItem={({ item: r }) => (
-                  <View style={styles.tableRow}>
-                    <Text style={styles.tableCell}>{r.nombre.replace(/_/g, ' ')}</Text>
-                    <Text style={styles.tableCell}>{r.cantidad_inicial} {r.unidad}</Text>
-                    {inventarioSolidos.meses.map((m) => (
-                      <Text key={m} style={styles.tableCell}>
-                        {r.consumos[m] || 0}
-                      </Text>
-                    ))}
-                    <Text style={styles.tableCell}>{r.existencia_final} {r.unidad}</Text>
-                    <Text style={styles.tableCell}>{r.total_consumido} {r.unidad}</Text>
-                  </View>
-                )}
-                ListHeaderComponent={
-                  <View style={styles.tableHeader}>
-                    <Text style={styles.tableHeaderCell}>Reactivo</Text>
-                    <Text style={styles.tableHeaderCell}>Cantidad</Text>
-                    {inventarioSolidos.meses.map((m) => (
-                      <Text key={m} style={styles.tableHeaderCell}>
-                        {m}
-                      </Text>
-                    ))}
-                    <Text style={styles.tableHeaderCell}>Existencia Final</Text>
-                    <Text style={styles.tableHeaderCell}>Total</Text>
-                  </View>
-                }
-              />
-            </ScrollView>
+            {filteredSolidos.length === 0 ? (
+              <View style={styles.noDataContainer}>
+                <Ionicons name="information-circle-outline" size={20} color="#6b7280" style={styles.icon} />
+                <Text style={styles.noData}>No hay registros.</Text>
+              </View>
+            ) : (
+              filteredSolidos.map((r, idx) => (
+                <View style={[styles.tableRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }]} key={idx}>
+                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 150 }]}>{r.nombre.replace(/_/g, ' ')}</Text>
+                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.cantidad_inicial} {r.unidad}</Text>
+                  {inventarioSolidos.meses.map((m) => (
+                    <Text key={m} style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>
+                      {r.consumos[m] || 0}
+                    </Text>
+                  ))}
+                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.existencia_final} {r.unidad}</Text>
+                  <Text style={[styles.tableCell, styles.tableCellBorder, { minWidth: 100 }]}>{r.total_consumido} {r.unidad}</Text>
+                </View>
+              ))
+            )}
           </View>
-        </View>
-      </Modal>
-  </SafeAreaView>
+        </ScrollView>
+      </ScrollView>
+    </View>
+  </View>
+</Modal>
+    </SafeAreaView>
   );
 }
 
@@ -822,6 +873,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    backgroundColor: '#f9fafb', // Fallback background color
   },
   loading: {
     flex: 1,
@@ -832,66 +884,84 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   title: {
-    fontSize: 32,
+    fontSize: 20, // Reduced for mobile, matches max-width: 576px
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     color: '#1e293b',
-  },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    marginBottom: 16,
   },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 16,
+    borderRadius: 10,
+    padding: 12, // Reduced for mobile, matches max-width: 768px
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 8,
+    flexWrap: 'wrap',
+  },
+  cardTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16, // Reduced for mobile
     fontWeight: 'bold',
-    color: '#1e293b',
+    marginLeft: 8,
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: 'rgba(0, 0, 0, 0.2)',
     borderRadius: 8,
     padding: 8,
-    fontSize: 14,
-    flex: 1,
-    maxWidth: 200,
-    marginLeft: 8,
+    fontSize: 12, // Reduced for mobile
+    maxWidth: 160, // Adjusted for smaller screens
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
+  noDataContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+  },
+  tableCellBorder: {
+  borderWidth: 1,
+  borderColor: '#e5e7eb',
+  padding: 8,
+  textAlign: 'center',
+},
   noData: {
-    fontSize: 14,
+    fontSize: 12, // Reduced for mobile
     color: '#6b7280',
     textAlign: 'center',
+    marginLeft: 8,
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#dbeafe',
     padding: 8,
     borderRadius: 8,
     marginBottom: 8,
   },
   tableHeaderCell: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 12, // Reduced for mobile
     fontWeight: 'bold',
-    color: '#1e293b',
+    textAlign: 'left',
   },
   tableRow: {
     flexDirection: 'row',
@@ -899,22 +969,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
+  tableRowActive: {
+    backgroundColor: 'rgba(20, 184, 166, 0.2)',
+  },
   tableCell: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 12, // Reduced for mobile
     color: '#4b5563',
+    textAlign: 'left',
   },
   actionButtons: {
     flexDirection: 'row',
     gap: 8,
+    alignItems: 'center',
   },
   showMore: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 8,
   },
   showMoreText: {
-    fontSize: 14,
+    fontSize: 12, // Reduced for mobile
     color: '#3b82f6',
+    textDecorationLine: 'underline',
+    marginLeft: 4,
   },
   modalContainer: {
     flex: 1,
@@ -923,27 +1002,38 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
   },
   modalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
-    padding: 16,
-    maxWidth: '90%',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 10,
+    padding: 12, // Reduced for mobile
     maxHeight: '80%',
-    width: '100%',
+    width: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 16, // Reduced for mobile
     fontWeight: 'bold',
-    color: '#1e293b',
+    marginLeft: 8,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 16, // Reduced for mobile
     color: '#ef4444',
-    textAlign: 'center',
-    marginTop: 32,
+    marginLeft: 8,
+  },
+  icon: {
+    marginRight: 4,
+  },
+  errorIcon: {
+    marginRight: 8,
   },
 });

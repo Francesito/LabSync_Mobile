@@ -78,7 +78,16 @@ export default function ConfiguracionScreen() {
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
 
- 
+   useEffect(() => {
+    if (!API_URL) return;
+    if (usuario && usuario.rol_id === 4) {
+      cargarUsuariosAlmacen();
+      cargarTodosUsuarios();
+      cargarEstadisticas();
+      cargarGrupos();
+    }
+  }, [usuario]);
+
   // Generar contraseña aleatoria
   const generarContrasenaAleatoria = (): string => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
@@ -489,12 +498,6 @@ export default function ConfiguracionScreen() {
     }
   };
 
-   useEffect(() => {
-    if (!API_URL) {
-      mostrarMensaje('error', 'API_URL no configurada');
-    }
-      }, []);
-
   if (!API_URL) {
     return (
       <LinearGradient
@@ -512,16 +515,7 @@ export default function ConfiguracionScreen() {
     );
   }
 
-  useEffect(() => {
-    if (usuario && usuario.rol_id === 4) {
-      cargarUsuariosAlmacen();
-      cargarTodosUsuarios();
-      cargarEstadisticas();
-      cargarGrupos();
-    }
-  }, [usuario]);
-
-   // Verificar que el usuario es administrador
+ // Verificar que el usuario es administrador
   if (!usuario || usuario.rol_id !== 4) {
     return (
       <LinearGradient
@@ -714,10 +708,10 @@ export default function ConfiguracionScreen() {
                   {loading ? (
                     <ActivityIndicator size="small" color="#ffffff" />
                   ) : (
-                    <>
+                   <View style={styles.submitContent}>
                       <Ionicons name="add-circle-outline" size={20} color="#ffffff" />
                       <Text style={styles.submitText}>Crear Usuario</Text>
-                    </>
+                   </View>
                   )}
                 </TouchableOpacity>
               </View>
@@ -905,7 +899,7 @@ export default function ConfiguracionScreen() {
               <View style={styles.actionsGrid}>
                 {/* Bloquear Usuario */}
                 <View style={styles.actionCard}>
-                  <View style={styles.actionIcon}>
+                 <View style={[styles.actionIcon, styles.actionIconBlock]}>
                     <Ionicons name="lock-closed-outline" size={24} color="#ffffff" />
                   </View>
                   <Text style={styles.actionTitle}>Bloquear Usuario</Text>
@@ -918,7 +912,7 @@ export default function ConfiguracionScreen() {
                     keyboardType="email-address"
                   />
                   <TouchableOpacity
-                    style={styles.actionButton}
+                    style={[styles.actionButton, styles.actionButtonBlock]}
                     onPress={bloquearUsuario}
                     disabled={loading}
                   >
@@ -932,7 +926,7 @@ export default function ConfiguracionScreen() {
 
                 {/* Desbloquear Usuario */}
                 <View style={styles.actionCard}>
-                  <View style={styles.actionIcon}>
+                  <View style={[styles.actionIcon, styles.actionIconUnblock]}>
                     <Ionicons name="lock-open-outline" size={24} color="#ffffff" />
                   </View>
                   <Text style={styles.actionTitle}>Desbloquear Usuario</Text>
@@ -945,7 +939,7 @@ export default function ConfiguracionScreen() {
                     keyboardType="email-address"
                   />
                   <TouchableOpacity
-                    style={styles.actionButton}
+                    style={[styles.actionButton, styles.actionButtonUnblock]}
                     onPress={desbloquearUsuario}
                     disabled={loading}
                   >
@@ -959,7 +953,7 @@ export default function ConfiguracionScreen() {
 
                 {/* Eliminar Usuario */}
                 <View style={styles.actionCard}>
-                  <View style={styles.actionIcon}>
+                   <View style={[styles.actionIcon, styles.actionIconDelete]}>
                     <Ionicons name="trash-outline" size={24} color="#ffffff" />
                   </View>
                   <Text style={styles.actionTitle}>Eliminar Usuario</Text>
@@ -972,7 +966,7 @@ export default function ConfiguracionScreen() {
                     keyboardType="email-address"
                   />
                   <TouchableOpacity
-                    style={styles.actionButton}
+                    style={[styles.actionButton, styles.actionButtonDelete]}
                     onPress={eliminarUsuario}
                     disabled={loading}
                   >
@@ -1297,13 +1291,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   submitButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#3b82f6',
     padding: 16,
     borderRadius: 8,
     marginTop: 16,
+  },
+   submitContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   submitText: {
     fontSize: 16,
@@ -1483,6 +1481,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 16,
+     marginBottom: 16,
   },
   actionCard: {
     flex: 1,
@@ -1495,15 +1494,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 1,
+     marginBottom: 16,
   },
   actionIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ef4444',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+  },
+   actionIconBlock: {
+    backgroundColor: '#f59e0b',
+  },
+  actionIconUnblock: {
+    backgroundColor: '#22c55e',
+  },
+  actionIconDelete: {
+    backgroundColor: '#ef4444',
   },
   actionTitle: {
     fontSize: 20,
@@ -1526,10 +1534,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   actionButton: {
-    backgroundColor: '#ef4444',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+     marginTop: 8,
+  },
+  actionButtonBlock: {
+    backgroundColor: '#f59e0b',
+  },
+  actionButtonUnblock: {
+    backgroundColor: '#22c55e',
+  },
+  actionButtonDelete: {
+    backgroundColor: '#ef4444',
   },
   actionButtonText: {
     fontSize: 16,
