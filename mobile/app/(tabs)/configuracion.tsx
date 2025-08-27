@@ -79,24 +79,7 @@ export default function ConfiguracionScreen() {
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
 
-  // Verificar que el usuario es administrador
-  if (!usuario || usuario.rol_id !== 4) {
-    return (
-      <LinearGradient
-        colors={['#f9fafb', '#f3f4f6']}
-        style={styles.container}
-      >
-        <View style={styles.deniedContainer}>
-          <View style={styles.deniedIcon}>
-            <Ionicons name="alert-circle-outline" size={32} color="#ef4444" />
-          </View>
-          <Text style={styles.deniedTitle}>Acceso Denegado</Text>
-          <Text style={styles.deniedText}>No tienes permisos para acceder a esta página.</Text>
-        </View>
-      </LinearGradient>
-    );
-  }
-
+ 
   // Generar contraseña aleatoria
   const generarContrasenaAleatoria = (): string => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
@@ -515,6 +498,24 @@ export default function ConfiguracionScreen() {
       cargarGrupos();
     }
   }, [usuario]);
+
+   // Verificar que el usuario es administrador
+  if (!usuario || usuario.rol_id !== 4) {
+    return (
+      <LinearGradient
+        colors={['#f9fafb', '#f3f4f6']}
+        style={styles.container}
+      >
+        <View style={styles.deniedContainer}>
+          <View style={styles.deniedIcon}>
+            <Ionicons name="alert-circle-outline" size={32} color="#ef4444" />
+          </View>
+          <Text style={styles.deniedTitle}>Acceso Denegado</Text>
+          <Text style={styles.deniedText}>No tienes permisos para acceder a esta página.</Text>
+        </View>
+      </LinearGradient>
+    );
+  }
 
   const tabs = [
     { id: 'crear', name: 'Crear Usuario', icon: 'person-add-outline' },

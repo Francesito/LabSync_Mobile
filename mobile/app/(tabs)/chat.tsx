@@ -446,15 +446,10 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-           keyboardVerticalOffset={bottom}
-        style={styles.container}
-      >
-        <LinearGradient colors={['#f3f4f6', '#f3f4f6']} style={styles.container}>
-          {selectedUser ? (
-            // Chat View
-            <View style={styles.chatContainer}>
+       <LinearGradient colors={['#f3f4f6', '#f3f4f6']} style={styles.container}>
+        {selectedUser ? (
+          // Chat View
+          <View style={styles.chatContainer}>
               {/* Chat Header */}
               <View style={[styles.chatHeader, { flexDirection: isTablet ? 'row' : 'row' }]}>
                 <TouchableOpacity onPress={() => setSelectedUser(null)} style={styles.backButton}>
@@ -511,34 +506,49 @@ export default function ChatScreen() {
               />
 
               {/* Message Input */}
-               <View
-               style={[styles.inputContainer, { marginBottom: bottomInset }]}
-                onLayout={(e) => setInputHeight(e.nativeEvent.layout.height)}
+                <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={bottomInset}
               >
-                <TextInput
-                  style={styles.input}
-                  placeholder="Escribe un mensaje..."
-                  value={nuevoMensaje}
-                  onChangeText={setNuevoMensaje}
-                  multiline
-                    underlineColorAndroid="transparent"
-                  editable={!loadingMensajes && !enviandoMensaje && !!permisos && permisos.acceso_chat}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.sendButton,
-                    (!nuevoMensaje.trim() || loadingMensajes || enviandoMensaje || !permisos || !permisos.acceso_chat) && styles.sendButtonDisabled,
-                  ]}
-                  onPress={handleEnviarMensaje}
-                  disabled={!nuevoMensaje.trim() || loadingMensajes || enviandoMensaje || !permisos || !permisos.acceso_chat}
-                >
-                  {enviandoMensaje ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <Ionicons name="send" size={20} color="#ffffff" />
-                  )}
-                </TouchableOpacity>
-              </View>
+               <View
+                 style={[styles.inputContainer, { marginBottom: bottomInset }]}
+                 onLayout={(e) => setInputHeight(e.nativeEvent.layout.height)}
+               >
+                 <TextInput
+                   style={styles.input}
+                   placeholder="Escribe un mensaje..."
+                   value={nuevoMensaje}
+                   onChangeText={setNuevoMensaje}
+                   multiline
+                   underlineColorAndroid="transparent"
+                   editable={!loadingMensajes && !enviandoMensaje && !!permisos && permisos.acceso_chat}
+                 />
+                 <TouchableOpacity
+                   style={[
+                     styles.sendButton,
+                     (!nuevoMensaje.trim() ||
+                       loadingMensajes ||
+                       enviandoMensaje ||
+                       !permisos ||
+                       !permisos.acceso_chat) && styles.sendButtonDisabled,
+                   ]}
+                   onPress={handleEnviarMensaje}
+                   disabled={
+                     !nuevoMensaje.trim() ||
+                     loadingMensajes ||
+                     enviandoMensaje ||
+                     !permisos ||
+                     !permisos.acceso_chat
+                   }
+                 >
+                   {enviandoMensaje ? (
+                     <ActivityIndicator size="small" color="#ffffff" />
+                   ) : (
+                     <Ionicons name="send" size={20} color="#ffffff" />
+                   )}
+                 </TouchableOpacity>
+               </View>
+              </KeyboardAvoidingView>
             </View>
           ) : (
             // Contact List View
@@ -601,7 +611,6 @@ export default function ChatScreen() {
             </View>
           )}
         </LinearGradient>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -279,9 +279,21 @@ export default function ResiduosScreen() {
     ]);
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
 
-    const path = `${FileSystem.documentDirectory}residuos.csv`;
-    await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
-    await Sharing.shareAsync(path);
+   const path = `${FileSystem.cacheDirectory}residuos.csv`;
+    await FileSystem.writeAsStringAsync(path, csv, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+
+    if (!(await Sharing.isAvailableAsync())) {
+      Alert.alert('Error', 'No se puede compartir el archivo en este dispositivo');
+      return;
+    }
+
+    await Sharing.shareAsync(path, {
+      mimeType: 'text/csv',
+      dialogTitle: 'Compartir CSV',
+      UTI: 'public.comma-separated-values-text',
+    });
   };
 
   const handleDownloadPDF = async () => {
@@ -324,7 +336,19 @@ export default function ResiduosScreen() {
     `;
 
     const { uri } = await Print.printToFileAsync({ html });
-    await Sharing.shareAsync(uri);
+      const pdfPath = `${FileSystem.cacheDirectory}residuos.pdf`;
+    await FileSystem.copyAsync({ from: uri, to: pdfPath });
+
+    if (!(await Sharing.isAvailableAsync())) {
+      Alert.alert('Error', 'No se puede compartir el archivo en este dispositivo');
+      return;
+    }
+
+    await Sharing.shareAsync(pdfPath, {
+      mimeType: 'application/pdf',
+      dialogTitle: 'Compartir PDF',
+      UTI: 'com.adobe.pdf',
+    });
   };
 
   const allChecked =
