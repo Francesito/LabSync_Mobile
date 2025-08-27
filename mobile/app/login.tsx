@@ -5,13 +5,14 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-    ImageBackground,
 } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 import { Link, router } from 'expo-router';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../constants/api';
+import { wolfSvg } from '../constants/wolfSvg';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -48,18 +49,13 @@ export default function LoginScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require('../assets/fondo1.png')}
-      style={styles.container}
-        resizeMode="cover"
-    >
+     <View style={styles.container}>
       <View style={styles.formContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Inicia Sesión</Text>
-          <Text style={styles.subtitle}>
-            Introduce tus credenciales para ingresar a tu cuenta.
-          </Text>
-        </View>
+       <SvgXml xml={wolfSvg} width={100} height={150} style={styles.logo} />
+        <Text style={styles.title}>Inicia Sesión</Text>
+        <Text style={styles.subtitle}>
+          Introduce tus credenciales para ingresar a tu cuenta.
+        </Text>
 
         {error ? (
           <View style={styles.errorContainer}>
@@ -120,16 +116,16 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </Link>
 
-        <Text style={styles.registerText}>
-          ¿No tienes cuenta?{' '}
+       <View style={styles.registerContainer}>
+          <Text style={styles.registerText}>¿No tienes cuenta? </Text>
           <Link href="/register" asChild>
             <TouchableOpacity>
-              <Text style={[styles.linkText, { fontWeight: 'bold' }]}>Regístrate</Text>
+               <Text style={[styles.registerText, styles.linkText, { fontWeight: 'bold' }]}>Regístrate</Text>
             </TouchableOpacity>
           </Link>
-        </Text>
+        </View>
       </View>
-    </ImageBackground>
+     </View>
   );
 }
 
@@ -146,22 +142,21 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingVertical: 24,
   },
-   header: {
-    backgroundColor: '#003579',
-    padding: 16,
-    borderRadius: 4,
-    marginBottom: 24,
+   logo: {
+    alignSelf: 'center',
+    marginBottom: 8,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-      color: '#fff',
+     color: '#003579',
     marginBottom: 4,
     textAlign: 'left',
   },
   subtitle: {
     fontSize: 14,
-   color: '#fff',
+    color: '#003579',
+    marginBottom: 24,
     textAlign: 'left',
   },
   errorContainer: {
@@ -229,12 +224,16 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: '#000',
-    textAlign: 'center',
     fontSize: 14,
   },
   registerText: {
     color: 'rgba(0,0,0,0.5)',
-    textAlign: 'center',
     fontSize: 14,
+  },
+    registerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
   },
 });
