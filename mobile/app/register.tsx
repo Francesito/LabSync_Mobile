@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-      backgroundColor: '#fff',
+    backgroundColor: '#003579',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -226,7 +226,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: Dimensions.get('window').width * 0.9, // 90% of screen width
     alignSelf: 'center',
-     borderColor: '#003579',
+    backgroundColor: '#fff',
+    borderColor: '#003579',
     borderWidth: 2,
     padding: 16,
     borderRadius: 4,
