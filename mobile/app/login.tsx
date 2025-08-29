@@ -14,7 +14,6 @@ import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../constants/api';
 import { wolfSvg } from '../constants/wolfSvg';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -51,17 +50,7 @@ export default function LoginScreen() {
   };
 
   return (
-     <View style={styles.container}>
-     <LinearGradient
-        colors={['rgba(0,53,121,0.8)', 'transparent']}
-        style={styles.gradientTop}
-        pointerEvents="none"
-      />
-      <LinearGradient
-        colors={['transparent', 'rgba(0,53,121,0.8)']}
-        style={styles.gradientBottom}
-        pointerEvents="none"
-      />
+   <View style={styles.container}>
       <View style={styles.formContainer}>
        <SvgXml xml={wolfSvg} width={100} height={150} style={styles.logo} />
         <Text style={styles.title}>Inicia Sesión</Text>
@@ -247,19 +236,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
-  },
- gradientTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 120,
-  },
-  gradientBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 120,
   },
 });

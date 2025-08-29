@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#003579',
+    backgroundColor: '#fff',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -227,27 +227,21 @@ const styles = StyleSheet.create({
     maxWidth: Dimensions.get('window').width * 0.9, // 90% of screen width
     alignSelf: 'center',
     backgroundColor: '#fff',
-    borderColor: '#003579',
-    borderWidth: 2,
     padding: 16,
-    borderRadius: 4,
   },
-   header: {
-    backgroundColor: '#003579',
-    padding: 16,
-    borderRadius: 4,
+ header: {
     marginBottom: 24,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-     color: '#fff',
+     color: '#003579',
     marginBottom: 4,
     textAlign: 'left',
   },
   subtitle: {
     fontSize: 14,
-     color: '#fff',
+     color: '#003579',
     textAlign: 'left',
   },
   errorContainer: {
