@@ -507,12 +507,19 @@ export default function SolicitudesScreen() {
       const token = await SecureStore.getItemAsync('token');
       if (token && vale?.id) {
         try {
-          const { data } = await axios.get(`${API_URL}/api/solicitudes/detalle/${vale.id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const { data } = await axios.get(
+            `${API_URL}/api/solicitudes/detalle/${vale.id}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 5000,
+            },
+          );
           vale = { ...vale, ...data };
-        } catch (e) {
-          console.error('Error al obtener detalle de solicitud:', e);
+       } catch (e: any) {
+          // Solo reportar error cuando el servidor no responda dentro del tiempo esperado
+          if (e.code === 'ECONNABORTED' || !e.response) {
+            console.error('Error al obtener detalle de solicitud:', e);
+          }
         }
       }
 
