@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -11,8 +11,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-    const [loaded, error] = useFonts({
+  const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
@@ -24,7 +23,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
-      void SplashScreen.hideAsync();
+          void SplashScreen.hideAsync().catch(() => null);
     }
   }, [loaded]);
 
@@ -32,6 +31,12 @@ export default function RootLayout() {
     return null;
   }
 
+  return <RootLayoutNav />;
+}
+
+function RootLayoutNav() {
+  const colorScheme = useColorScheme();
+  
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack screenOptions={{ headerShown: false }}>
