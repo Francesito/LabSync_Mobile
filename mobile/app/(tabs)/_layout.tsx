@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
@@ -9,44 +9,77 @@ import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
+const LOADING_INDICATOR_COLOR = '#2563eb';
+
+type RoleId = 1 | 2 | 3 | 4 | null;
+type TabName =
+  | 'solicitudes'
+  | 'adeudos'
+  | 'residuo'
+  | 'prestamos'
+  | 'chat'
+  | 'reportes'
+  | 'configuracion'
+  | 'historial'
+  | 'notificaciones';
+
+const tabVisibilityByRole: Record<TabName, RoleId[]> = {
+  solicitudes: [1, 2, 3],
+  adeudos: [1, 2],
+  residuo: [1],
+  prestamos: [3],
+  chat: [1, 3],
+  reportes: [3, 4],
+  configuracion: [4],
+  historial: [3, 4],
+  notificaciones: [1, 2, 3],
+};
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const [roleId, setRoleId] = useState<number | null>(null);
+ const [roleId, setRoleId] = useState<RoleId>(null);
   const [isReady, setIsReady] = useState(false);
 
-useEffect(() => {
-    const loadRole = async () => {
-      try {
-        const userStr = await SecureStore.getItemAsync('usuario');
-        if (!userStr) {
-          setRoleId(null);
-        } else {
-          const parsed = JSON.parse(userStr);
-          const role = Number(parsed.rol_id) || null;
-          
-          console.log('Usuario completo:', parsed);
-          console.log('roleId extraído:', role);
-          console.log('Should show prestamos tab:', role === 3);
-          
-          setRoleId(role);
-        }
-      } catch (error) {
-        console.error('Error parsing user data:', error);
+const loadRole = useCallback(async () => {
+    try {
+      const userStr = await SecureStore.getItemAsync('usuario');
+      if (!userStr) {
         setRoleId(null);
-      } finally {
-        setIsReady(true);
+         return;
       }
-    };
-    loadRole();
+
+    const parsed = JSON.parse(userStr);
+      const numericRole = Number(parsed.rol_id);
+      const allowedRoles = new Set<Exclude<RoleId, null>>([1, 2, 3, 4]);
+      const sanitizedRole = allowedRoles.has(numericRole as Exclude<RoleId, null>)
+        ? (numericRole as RoleId)
+        : null;
+
+      setRoleId(sanitizedRole);
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      setRoleId(null);
+    } finally {
+      setIsReady(true);
+    }
   }, []);
 
-if (!isReady) {
+ useEffect(() => {
+    void loadRole();
+  }, [loadRole]);
+
+  if (!isReady) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#0000ff" />
+             <ActivityIndicator size="large" color={LOADING_INDICATOR_COLOR} />
       </View>
     );
   }
+
+    const canAccess = (tab: TabName) => {
+    const allowedRoles = tabVisibilityByRole[tab];
+    return roleId !== null && allowedRoles.includes(roleId);
+  };
 
   return (
     <Tabs
@@ -73,7 +106,7 @@ if (!isReady) {
       <Tabs.Screen
         name="solicitudes"
         options={{
-         href: roleId !== null && [1, 2, 3].includes(roleId) ? undefined : null,
+          href: canAccess('solicitudes') ? undefined : null,
           title: 'Solicitudes',
           tabBarIcon: ({ color }) => <Ionicons name="document-text" size={28} color={color} />,
         }}
@@ -82,7 +115,7 @@ if (!isReady) {
       <Tabs.Screen
         name="adeudos"
         options={{
-          href: roleId !== null && [1, 2].includes(roleId) ? undefined : null,
+          href: canAccess('adeudos') ? undefined : null,
           title: 'Adeudos',
           tabBarIcon: ({ color }) => <Ionicons name="alert-circle" size={28} color={color} />,
         }}
@@ -91,7 +124,7 @@ if (!isReady) {
       <Tabs.Screen
         name="residuo"
         options={{
-         href: roleId === 1 ? undefined : null,
+             href: canAccess('residuo') ? undefined : null,
           title: 'Residuos',
           tabBarIcon: ({ color }) => <Ionicons name="trash" size={28} color={color} />,
         }}
@@ -100,7 +133,7 @@ if (!isReady) {
       <Tabs.Screen
         name="prestamos"
         options={{
-         href: roleId === 3 ? undefined : null,
+          href: canAccess('prestamos') ? undefined : null,
           title: 'Préstamos',
           tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal" size={28} color={color} />,
         }}
@@ -109,7 +142,7 @@ if (!isReady) {
       <Tabs.Screen
         name="chat"
         options={{
-         href: roleId !== null && [1, 3].includes(roleId) ? undefined : null,
+          href: canAccess('chat') ? undefined : null,
           title: 'Chat',
           tabBarIcon: ({ color }) => <Ionicons name="chatbubble-ellipses" size={28} color={color} />,
         }}
@@ -118,7 +151,7 @@ if (!isReady) {
       <Tabs.Screen
         name="reportes"
         options={{
-         href: roleId !== null && [3, 4].includes(roleId) ? undefined : null,
+          href: canAccess('reportes') ? undefined : null,
           title: 'Reportes',
           tabBarIcon: ({ color }) => <Ionicons name="bar-chart" size={28} color={color} />,
         }}
@@ -127,7 +160,7 @@ if (!isReady) {
       <Tabs.Screen
         name="configuracion"
         options={{
-          href: roleId === 4 ? undefined : null,
+            href: canAccess('configuracion') ? undefined : null,
           title: 'Configuración',
           tabBarIcon: ({ color }) => <Ionicons name="settings" size={28} color={color} />,
         }}
@@ -136,7 +169,7 @@ if (!isReady) {
       <Tabs.Screen
         name="historial"
         options={{
-         href: roleId !== null && [3, 4].includes(roleId) ? undefined : null,
+          href: canAccess('historial') ? undefined : null,
           title: 'Historial',
           tabBarIcon: ({ color }) => <Ionicons name="time" size={28} color={color} />,
         }}
@@ -145,9 +178,9 @@ if (!isReady) {
       <Tabs.Screen
         name="notificaciones"
         options={{
-         href: roleId !== null && [1, 2, 3].includes(roleId) ? undefined : null,
+          href: canAccess('notificaciones') ? undefined : null,
           title: 'Notificaciones',
-            tabBarIcon: ({ color }) => <Ionicons name="notifications" size={28} color={color} />, 
+             tabBarIcon: ({ color }) => <Ionicons name="notifications" size={28} color={color} />,
         }}
       />
 
