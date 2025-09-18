@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
@@ -23,7 +23,7 @@ type TabName =
   | 'historial'
   | 'notificaciones';
 
-const tabVisibilityByRole: Record<TabName, RoleId[]> = {
+const TAB_VISIBILITY_BY_ROLE: Record<TabName, RoleId[]> = {
   solicitudes: [1, 2, 3],
   adeudos: [1, 2],
   residuo: [1],
@@ -35,6 +35,8 @@ const tabVisibilityByRole: Record<TabName, RoleId[]> = {
   notificaciones: [1, 2, 3],
 };
 
+const ALLOWED_ROLES = new Set<Exclude<RoleId, null>>([1, 2, 3, 4]);
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
  const [roleId, setRoleId] = useState<RoleId>(null);
@@ -43,16 +45,18 @@ export default function TabLayout() {
 const loadRole = useCallback(async () => {
     try {
       const userStr = await SecureStore.getItemAsync('usuario');
+
       if (!userStr) {
         setRoleId(null);
          return;
       }
 
-    const parsed = JSON.parse(userStr);
+   const parsed = JSON.parse(userStr) as { rol_id?: number | string }; 
       const numericRole = Number(parsed.rol_id);
-      const allowedRoles = new Set<Exclude<RoleId, null>>([1, 2, 3, 4]);
-      const sanitizedRole = allowedRoles.has(numericRole as Exclude<RoleId, null>)
-        ? (numericRole as RoleId)
+     const sanitizedRole: RoleId = ALLOWED_ROLES.has(
+        numericRole as Exclude<RoleId, null>,
+      )
+        ? (numericRole as Exclude<RoleId, null>)
         : null;
 
       setRoleId(sanitizedRole);
@@ -68,6 +72,16 @@ const loadRole = useCallback(async () => {
     void loadRole();
   }, [loadRole]);
 
+    const canAccess = useCallback(
+    (tab: TabName) => roleId !== null && TAB_VISIBILITY_BY_ROLE[tab].includes(roleId),
+    [roleId],
+  );
+
+  const tabBarActiveTintColor = useMemo(
+    () => Colors[colorScheme ?? 'light'].tint,
+    [colorScheme],
+  );
+
   if (!isReady) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -76,16 +90,11 @@ const loadRole = useCallback(async () => {
     );
   }
 
-    const canAccess = (tab: TabName) => {
-    const allowedRoles = tabVisibilityByRole[tab];
-    return roleId !== null && allowedRoles.includes(roleId);
-  };
-
   return (
     <Tabs
       initialRouteName="catalogo"
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+      tabBarActiveTintColor,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
